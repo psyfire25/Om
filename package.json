@@ -10,7 +10,9 @@
     "seed": "node scripts/seed.mjs"
   },
   "dependencies": {
+    "@neondatabase/serverless": "^1.0.2",
     "bcryptjs": "3.0.3",
+    "drizzle-orm": "^0.44.7",
     "jose": "5.9.6",
     "lowdb": "7.0.1",
     "nanoid": "5.0.7",
@@ -23,6 +25,8 @@
   "devDependencies": {
     "@types/node": "24.10.0",
     "@types/react": "19.2.2",
+    "dotenv": "^17.2.3",
+    "drizzle-kit": "^0.31.6",
     "typescript": "5.4.5"
   }
 }
