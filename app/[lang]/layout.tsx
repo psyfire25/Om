@@ -2,6 +2,7 @@ import "../../styles/globals.css";
 import Link from "next/link";
 import { locales, defaultLocale, type Locale } from "../../lib/i18n";
 import LangSwitcher from "../../components/LangSwitcher";
+import LogoutButton from "@/components/LogoutButton";
 
 export async function generateStaticParams() {
   return locales.map((l) => ({ lang: l }));
@@ -23,6 +24,7 @@ export default function LangLayout({
             <strong className="brand">
               {process.env.SITE_NAME || "Mas de L'Om"}
             </strong>
+            <LogoutButton lang={lang} />
             <Link href={`/${lang}/admin`}>Dashboard</Link>
             <div className="grow" />
             <LangSwitcher lang="en" />
