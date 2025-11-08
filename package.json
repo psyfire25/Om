@@ -1,0 +1,26 @@
+{
+  "name": "mas-del-om-internal",
+  "version": "0.4.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "seed": "node scripts/seed.mjs"
+  },
+  "dependencies": {
+    "bcryptjs": "2.4.3",
+    "jose": "5.9.6",
+    "lowdb": "7.0.1",
+    "nanoid": "5.0.7",
+    "next": "14.2.5",
+    "react": "18.3.1",
+    "react-dom": "18.3.1",
+    "swr": "2.2.5",
+    "zod": "3.23.8"
+  },
+  "devDependencies": {
+    "typescript": "5.4.5"
+  }
+}

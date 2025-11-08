@@ -1,0 +1,18 @@
+{
+  // These tasks will run in order when initializing your CodeSandbox project.
+  "setupTasks": [
+    {
+      "command": "cd mas-del-om-internal-i18n-ui-fr-it && pnpm install",
+      "name": "c"
+    }
+  ],
+
+  // These tasks can be run from CodeSandbox. Running one will open a log in the app.
+  "tasks": {
+    "p": {
+      "name": "p",
+      "command": "pnpm dev",
+      "runAtStart": true
+    }
+  }
+}
