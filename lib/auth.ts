@@ -1,29 +1,69 @@
-import bcrypt from 'bcryptjs';
-import { SignJWT, jwtVerify } from 'jose';
-import { cookies } from 'next/headers';
-import { db, type User, type Role } from './db';
+// lib/auth.ts
+import bcrypt from "bcryptjs";
+import { SignJWT, jwtVerify, type JWTPayload } from "jose";
+import { cookies } from "next/headers";
+import { NextResponse } from "next/server";
 
-const alg = 'HS256';
-const secret = new TextEncoder().encode(process.env.JWT_SECRET || 'dev-secret-change-me');
+export type Role = "SUPER" | "ADMIN" | "STAFF" | "GUARD";
 
-export async function hashPassword(password: string) { const salt = await bcrypt.genSalt(10); return bcrypt.hash(password, salt); }
-export async function verifyPassword(password: string, hash: string) { return bcrypt.compare(password, hash); }
+export type SessionClaims = {
+  sub: string; // user id
+  email: string;
+  role: Role;
+  name?: string | null;
+} & JWTPayload;
 
-export type Session = { sub: string; email: string; role: Role; name: string };
-export async function signSession(user: User) {
-  return await new SignJWT({ email: user.email, role: user.role, name: user.name })
-    .setProtectedHeader({ alg }).setSubject(user.id).setIssuedAt().setExpirationTime('7d').sign(secret);
+const alg = "HS256";
+const secret = new TextEncoder().encode(
+  process.env.JWT_SECRET || "dev-secret-change-me"
+);
+
+// Password helpers
+export async function hashPassword(plain: string) {
+  return bcrypt.hash(plain, 10);
 }
-export async function readSession(): Promise<Session | null> {
+export async function verifyPassword(plain: string, hash: string) {
+  return bcrypt.compare(plain, hash);
+}
+
+// Create a signed JWT for the session cookie
+export async function signSession(claims: SessionClaims) {
+  const now = Math.floor(Date.now() / 1000);
+  return await new SignJWT(claims)
+    .setProtectedHeader({ alg })
+    .setIssuedAt(now)
+    .setExpirationTime(now + 60 * 60 * 24 * 7) // 7 days
+    .sign(secret);
+}
+
+// Read & verify session cookie; returns claims or null
+export async function readSession(): Promise<SessionClaims | null> {
   try {
-    const token = cookies().get('session')?.value; if (!token) return null;
-    const { payload } = await jwtVerify(token, secret);
-    return { sub: String(payload.sub), email: String(payload.email), role: payload.role as Role, name: String(payload.name) };
-  } catch { return null; }
+    const token = cookies().get("session")?.value;
+    if (!token) return null;
+    const { payload } = await jwtVerify(token, secret, { algorithms: [alg] });
+    // minimal shape guard
+    if (!payload || typeof payload !== "object") return null;
+    if (!payload.sub || !payload.email || !payload.role) return null;
+    return payload as SessionClaims;
+  } catch {
+    return null;
+  }
 }
-export async function requireRole(role: Role | Role[]) {
-  const s = await readSession(); if (!s) throw Object.assign(new Error('Unauthorized'), { status: 401 });
-  const roles = Array.isArray(role) ? role : [role]; if (!roles.includes(s.role)) throw Object.assign(new Error('Forbidden'), { status: 403 });
+
+// Require a minimum role; returns claims if authorized, otherwise throws 401
+export async function requireRole(min: Role): Promise<SessionClaims> {
+  const s = await readSession();
+  if (!s) throw new NextResponse("Unauthorized", { status: 401 });
+
+  const rank: Record<Role, number> = {
+    SUPER: 3,
+    ADMIN: 2,
+    STAFF: 1,
+    GUARD: 0,
+  };
+  if (rank[s.role as Role] < rank[min]) {
+    throw new NextResponse("Forbidden", { status: 403 });
+  }
   return s;
 }
-export async function currentUser() { const s = await readSession(); if (!s) return null; return db.data.users.find(u=>u.id===s.sub) || null; }
