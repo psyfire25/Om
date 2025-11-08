@@ -43,11 +43,10 @@ export async function POST(req: Request) {
 
   // Prefer the request origin; fallback to BASE_URL if set
   const origin = new URL(req.url).origin;
-  const baseEnv = process.env.BASE_URL || origin;
-  const base = normalizeBase(baseEnv);
+const base = normalizeBase(origin);
 
-  return NextResponse.json({
-    token,
-    url: `${base}/${lang}/invite/${token}`,
-  });
+return NextResponse.json({
+  token,
+  url: `${base}/${lang}/invite/${token}`,
+});
 }
