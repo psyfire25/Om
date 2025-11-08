@@ -1,3 +1,8 @@
+// 👇 prevent build-time prerender/export for this route
+export const runtime = "nodejs";
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
+
 // app/api/invites/route.ts
 import { db } from "@/lib/db";
 import { requireRole } from "@/lib/auth";

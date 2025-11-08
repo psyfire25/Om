@@ -1,7 +1,13 @@
+// 👇 prevent build-time prerender/export for this route
+export const runtime = "nodejs";
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
+
 import { db } from "@/lib/db";
 import { hashPassword, signSession } from "@/lib/auth";
 import { NextResponse } from "next/server";
-import { sessionCookieOptions } from "@/lib/cookies";
+import { headers } from "next/headers";
+import { sessionCookieOptionsFromHost } from "@/lib/cookies";
 
 export async function POST() {
   if (db.data.users.find((u) => u.role === "SUPER"))
@@ -24,8 +30,9 @@ export async function POST() {
   db.data.users.push(user as any);
   db.write();
   const token = await signSession(user as any);
+  const host = headers().get("host") || "";
   const res = NextResponse.json({ ok: true });
-  res.cookies.set("session", token, sessionCookieOptions());
+  res.cookies.set("session", token, sessionCookieOptionsFromHost(host));
   return res;
 }
 export async function GET() {

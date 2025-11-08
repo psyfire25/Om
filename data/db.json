@@ -32,6 +32,13 @@
       "createdBy": "65571f13-9bf0-41ea-82cc-03bf7338bacc",
       "createdAt": "2025-11-08T15:01:47.682Z",
       "expiresAt": "2025-11-15T15:01:47.682Z"
+    },
+    {
+      "token": "98896006-a01a-49c0-a9a7-ef3e2f1cfc91",
+      "role": "STAFF",
+      "createdBy": "65571f13-9bf0-41ea-82cc-03bf7338bacc",
+      "createdAt": "2025-11-08T16:00:49.475Z",
+      "expiresAt": "2025-11-15T16:00:49.475Z"
     }
   ],
   "projects": [],
