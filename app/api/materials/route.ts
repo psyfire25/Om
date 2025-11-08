@@ -1,22 +1,46 @@
-// 👇 prevent build-time prerender/export for this route
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
 
-import { db, create } from "@/lib/db";
-import { json, bad } from "..//_util";
+import { NextResponse } from "next/server";
+import { db } from "@/lib/db";
+import { materials } from "@/lib/schema";
+import { desc, eq } from "drizzle-orm";
+import { requireRole } from "@/lib/auth";
+
 export async function GET() {
-  return json(db.data.materials);
+  await requireRole("STAFF");
+  const rows = await db
+    .select()
+    .from(materials)
+    .orderBy(desc(materials.updatedAt));
+  return NextResponse.json(rows);
 }
+
 export async function POST(req: Request) {
-  const body = await req.json().catch(() => null);
-  if (!body?.name) return bad("Missing name");
-  const material = await create("materials", {
-    name: body.name,
-    quantity: Number(body.quantity ?? 0),
-    unit: body.unit || undefined,
-    location: body.location || undefined,
-    notes: body.notes || undefined,
+  await requireRole("STAFF");
+  const b = await req.json().catch(() => null);
+  if (!b?.name) return new NextResponse("Missing name", { status: 400 });
+
+  const id = crypto.randomUUID();
+  const now = new Date();
+
+  await db.insert(materials).values({
+    id,
+    name: b.name,
+    sku: b.sku ?? null,
+    quantity: Number.isFinite(b.quantity) ? Number(b.quantity) : 0,
+    unit: b.unit ?? "pcs",
+    location: b.location ?? null,
+    notes: b.notes ?? null,
+    createdAt: now,
+    updatedAt: now,
   });
-  return json(material, 201);
+
+  const [row] = await db
+    .select()
+    .from(materials)
+    .where(eq(materials.id, id))
+    .limit(1);
+  return NextResponse.json(row, { status: 201 });
 }

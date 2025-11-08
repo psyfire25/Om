@@ -1,12 +1,14 @@
+// app/api/invites/route.ts
+
 // 👇 prevent build-time prerender/export for this route
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
 
-// app/api/invites/route.ts
-import { db } from "@/lib/db";
-import { requireRole } from "@/lib/auth";
 import { NextResponse } from "next/server";
+import { db } from "@/lib/db";
+import { invites } from "@/lib/schema";
+import { requireRole } from "@/lib/auth";
 import { defaultLocale } from "@/lib/i18n";
 
 function normalizeBase(base: string) {
@@ -15,25 +17,29 @@ function normalizeBase(base: string) {
 }
 
 export async function POST(req: Request) {
+  // must be SUPER to create invites
   const me = await requireRole("SUPER");
-  const body = await req.json().catch(() => null);
+
+  const body = await req.json().catch(() => null as any);
   const role = body?.role || "STAFF";
-  const email = body?.email || undefined;
-  const days = Number(body?.expiresDays || 7);
-  const lang = (body?.lang || defaultLocale) as string;
+  const email: string | null = body?.email ? String(body.email) : null;
+  const days = Number(body?.expiresDays ?? 7);
+  const lang = String(body?.lang || defaultLocale);
 
   const token = crypto.randomUUID();
   const now = new Date();
-  const invite = {
+  const expiresAt = new Date(now.getTime() + days * 86400000);
+
+  // write to Postgres (Neon) via Drizzle
+  await db.insert(invites).values({
     token,
     role,
     email,
-    createdBy: me.sub,
-    createdAt: now.toISOString(),
-    expiresAt: new Date(now.getTime() + days * 86400000).toISOString(),
-  };
-  db.data.invites.push(invite as any);
-  db.write();
+    createdBy: me.sub, // issuer user id from your session
+    createdAt: now,
+    expiresAt,
+    // usedAt / usedBy remain null until consumed
+  });
 
   // Prefer the request origin; fallback to BASE_URL if set
   const origin = new URL(req.url).origin;

@@ -15,6 +15,13 @@
       "when": 1762621408137,
       "tag": "0001_flawless_valkyrie",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1762622853865,
+      "tag": "0002_classy_betty_brant",
+      "breakpoints": true
     }
   ]
 }

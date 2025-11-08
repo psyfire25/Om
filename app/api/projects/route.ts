@@ -1,22 +1,45 @@
-// 👇 prevent build-time prerender/export for this route
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
 
-import { db, create } from "@/lib/db";
-import { json, bad } from "../_util";
+import { NextResponse } from "next/server";
+import { db } from "@/lib/db";
+import { projects } from "@/lib/schema";
+import { desc, eq } from "drizzle-orm";
+import { requireRole } from "@/lib/auth";
+
 export async function GET() {
-  return json(db.data.projects.sort((a, b) => a.name.localeCompare(b.name)));
+  await requireRole("STAFF");
+  const rows = await db
+    .select()
+    .from(projects)
+    .orderBy(desc(projects.createdAt));
+  return NextResponse.json(rows);
 }
+
 export async function POST(req: Request) {
-  const body = await req.json().catch(() => null);
-  if (!body?.name) return bad("Missing name");
-  const project = await create("projects", {
-    name: body.name,
-    description: body.description || "",
-    status: body.status || "PLANNING",
-    startDate: body.startDate || undefined,
-    endDate: body.endDate || undefined,
+  await requireRole("ADMIN");
+  const b = await req.json().catch(() => null);
+  if (!b?.name) return new NextResponse("Missing name", { status: 400 });
+
+  const id = crypto.randomUUID();
+  const now = new Date();
+
+  await db.insert(projects).values({
+    id,
+    name: b.name,
+    description: b.description ?? null,
+    status: b.status ?? "PLANNING",
+    startDate: b.startDate ? new Date(b.startDate) : null,
+    endDate: b.endDate ? new Date(b.endDate) : null,
+    createdAt: now,
+    updatedAt: now,
   });
-  return json(project, 201);
+
+  const [row] = await db
+    .select()
+    .from(projects)
+    .where(eq(projects.id, id))
+    .limit(1);
+  return NextResponse.json(row, { status: 201 });
 }

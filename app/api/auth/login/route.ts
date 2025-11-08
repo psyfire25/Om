@@ -17,14 +17,14 @@ export async function POST(req: Request) {
     return new NextResponse("Missing credentials", { status: 400 });
   }
 
-  const email = String(body.email).toLowerCase();
+  const email = String(body.email).toLowerCase().trim();
   const [u] = await db
     .select()
     .from(users)
     .where(eq(users.email, email))
     .limit(1);
-
   if (!u || !u.active) return new NextResponse("Unauthorized", { status: 401 });
+
   const ok = await bcrypt.compare(String(body.password), u.passwordHash);
   if (!ok) return new NextResponse("Unauthorized", { status: 401 });
 

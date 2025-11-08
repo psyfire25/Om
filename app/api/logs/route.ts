@@ -1,23 +1,38 @@
-// 👇 prevent build-time prerender/export for this route
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
 
-import { db, create } from "@/lib/db";
-import { json, bad } from "..//_util";
+import { NextResponse } from "next/server";
+import { db } from "@/lib/db";
+import { logs } from "@/lib/schema";
+import { desc, eq } from "drizzle-orm";
+import { requireRole, readSession } from "@/lib/auth";
+
 export async function GET() {
-  return json(db.data.logs.sort((a, b) => (a.date < b.date ? 1 : -1)));
+  await requireRole("STAFF");
+  const rows = await db.select().from(logs).orderBy(desc(logs.createdAt));
+  return NextResponse.json(rows);
 }
+
 export async function POST(req: Request) {
-  const body = await req.json().catch(() => null);
-  if (!body?.text) return bad("Missing text");
-  const entry = await create("logs", {
-    date: body.date || new Date().toISOString(),
-    author: body.author || undefined,
-    weather: body.weather || undefined,
-    text: body.text,
-    projectId: body.projectId || undefined,
-    photos: body.photos || undefined,
+  await requireRole("STAFF");
+  const b = await req.json().catch(() => null);
+  if (!b?.text) return new NextResponse("Missing text", { status: 400 });
+
+  const id = crypto.randomUUID();
+  const me = await readSession(); // for authorId if available
+  const now = new Date();
+
+  await db.insert(logs).values({
+    id,
+    text: b.text,
+    authorId: me?.sub ?? null,
+    projectId: b.projectId ?? null,
+    taskId: b.taskId ?? null,
+    level: b.level ?? "INFO",
+    createdAt: now,
   });
-  return json(entry, 201);
+
+  const [row] = await db.select().from(logs).where(eq(logs.id, id)).limit(1);
+  return NextResponse.json(row, { status: 201 });
 }

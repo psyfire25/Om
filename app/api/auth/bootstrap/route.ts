@@ -12,7 +12,9 @@ import { sessionCookieOptionsFromHost } from "@/lib/cookies";
 import { headers } from "next/headers";
 
 export async function POST() {
-  const email = process.env.BOOTSTRAP_SUPERADMIN_EMAIL || "super@example.com";
+  const email = (
+    process.env.BOOTSTRAP_SUPERADMIN_EMAIL || "super@example.com"
+  ).toLowerCase();
   const name = process.env.BOOTSTRAP_SUPERADMIN_NAME || "Super Admin";
   const pass = process.env.BOOTSTRAP_SUPERADMIN_PASSWORD || "change-me";
 
@@ -25,16 +27,14 @@ export async function POST() {
   if (!u) {
     const id = crypto.randomUUID();
     const passwordHash = await bcrypt.hash(pass, 10);
-    await db
-      .insert(users)
-      .values({
-        id,
-        name,
-        email: email.toLowerCase(),
-        role: "SUPER",
-        passwordHash,
-        active: true,
-      });
+    await db.insert(users).values({
+      id,
+      name,
+      email,
+      role: "SUPER",
+      passwordHash,
+      active: true,
+    });
     [u] = await db.select().from(users).where(eq(users.id, id)).limit(1);
   }
 

@@ -9,18 +9,18 @@ import { desc, eq } from "drizzle-orm";
 import { requireRole } from "@/lib/auth";
 
 export async function GET() {
-  await requireRole("STAFF"); // or ADMIN
+  await requireRole("STAFF");
   const rows = await db.select().from(tasks).orderBy(desc(tasks.createdAt));
   return NextResponse.json(rows);
 }
 
 export async function POST(req: Request) {
-  await requireRole("STAFF"); // or ADMIN
+  await requireRole("STAFF");
   const body = await req.json().catch(() => null);
   if (!body?.title) return new NextResponse("Missing title", { status: 400 });
 
-  const now = new Date();
   const id = crypto.randomUUID();
+  const now = new Date();
 
   await db.insert(tasks).values({
     id,
@@ -28,9 +28,11 @@ export async function POST(req: Request) {
     description: body.description ?? null,
     status: body.status ?? "PENDING",
     projectId: body.projectId ?? null,
+    assigneeId: body.assigneeId ?? null,
     startDate: body.startDate ? new Date(body.startDate) : null,
     endDate: body.endDate ? new Date(body.endDate) : null,
     dueDate: body.dueDate ? new Date(body.dueDate) : null,
+    priority: Number.isFinite(body.priority) ? Number(body.priority) : 0,
     createdAt: now,
     updatedAt: now,
   });
