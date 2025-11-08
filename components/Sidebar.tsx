@@ -6,12 +6,15 @@ import { t, type Locale } from '@/lib/i18n';
 export default function Sidebar({ lang }: { lang: Locale }){
   const p = usePathname();
   const items = [
-    { href: `/${lang}/admin`, icon: '📁', label: t(lang,'projects') },
+    { href: `/${lang}/dashboard`, icon: '🏠', label: t(lang,'home') },
+    { href: `/${lang}/schedule`,  icon: '📅', label: t(lang,'schedule') },
+    { href: `/${lang}/admin`,     icon: '📁', label: t(lang,'projects') },
     { href: `/${lang}/admin#tasks`, icon: '✅', label: t(lang,'tasks') },
     { href: `/${lang}/admin#materials`, icon: '🧰', label: t(lang,'materials') },
     { href: `/${lang}/admin#logs`, icon: '📓', label: t(lang,'logs') },
     { href: `/${lang}/admin/super`, icon: '👑', label: t(lang,'usersInvites') },
   ];
+  
   return (
     <aside className="sidebar">
       <ul className="tree">

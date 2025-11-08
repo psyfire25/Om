@@ -1,0 +1,41 @@
+{
+  "users": [
+    {
+      "id": "65571f13-9bf0-41ea-82cc-03bf7338bacc",
+      "name": "John",
+      "email": "jljmedia@me.com",
+      "role": "SUPER",
+      "passwordHash": "$2a$10$sGBhWhmx9ItM7cyj1EdREOo1jNsm5Dmx0r2bVZRAX4jU4cU9y.wFK",
+      "active": true,
+      "createdAt": "2025-11-08T14:09:40.385Z",
+      "updatedAt": "2025-11-08T14:09:40.385Z"
+    }
+  ],
+  "invites": [
+    {
+      "token": "a3b6258b-d34f-4d2d-b42f-ec8dc499b7a2",
+      "role": "ADMIN",
+      "createdBy": "65571f13-9bf0-41ea-82cc-03bf7338bacc",
+      "createdAt": "2025-11-08T14:53:53.519Z",
+      "expiresAt": "2025-11-15T14:53:53.519Z"
+    },
+    {
+      "token": "e94d1951-7e07-49c3-8741-e2ac12b3ab32",
+      "role": "STAFF",
+      "createdBy": "65571f13-9bf0-41ea-82cc-03bf7338bacc",
+      "createdAt": "2025-11-08T15:01:20.163Z",
+      "expiresAt": "2025-11-15T15:01:20.163Z"
+    },
+    {
+      "token": "3b642aaf-d7d0-426e-b6dd-3de906165a43",
+      "role": "STAFF",
+      "createdBy": "65571f13-9bf0-41ea-82cc-03bf7338bacc",
+      "createdAt": "2025-11-08T15:01:47.682Z",
+      "expiresAt": "2025-11-15T15:01:47.682Z"
+    }
+  ],
+  "projects": [],
+  "tasks": [],
+  "materials": [],
+  "logs": []
+}
