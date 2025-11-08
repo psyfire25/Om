@@ -66,7 +66,7 @@ export default function InviteAcceptPage({
 
   return (
     <main style={{ maxWidth: 560, margin: "40px auto" }}>
-      <h1>Join Mas del Om</h1>
+      <h1>Join Mas de L'Om</h1>
       <p>
         Role: <b>{inv?.role}</b>
       </p>

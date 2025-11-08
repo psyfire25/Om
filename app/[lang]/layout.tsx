@@ -21,7 +21,7 @@ export default function LangLayout({
         <header>
           <nav>
             <strong className="brand">
-              {process.env.SITE_NAME || "Mas del Om"}
+              {process.env.SITE_NAME || "Mas de L'Om"}
             </strong>
             <Link href={`/${lang}/admin`}>Dashboard</Link>
             <div className="grow" />
