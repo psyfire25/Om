@@ -1,17 +1,19 @@
-// 👇 prevent build-time prerender/export for this route
-export const runtime = "nodejs";
-export const dynamic = "force-dynamic";
+// app/api/auth/logout/route.ts
+export const runtime = 'nodejs';
+export const dynamic = 'force-dynamic';
 export const revalidate = 0;
 
-import { NextResponse } from "next/server";
-import { headers } from "next/headers";
-import { sessionCookieOptionsFromHost } from "@/lib/cookies";
+import { NextResponse } from 'next/server';
+import { cookies } from 'next/headers';
+
 export async function POST() {
-  const host = headers().get("host") || "";
-  const res = NextResponse.json({ ok: true });
-  res.cookies.set("session", "", {
-    ...sessionCookieOptionsFromHost(host),
+  const jar = cookies();
+  jar.set('session', '', {
+    httpOnly: true,
+    sameSite: 'lax',
+    secure: process.env.NODE_ENV === 'production',
+    path: '/',
     maxAge: 0,
   });
-  return res;
+  return NextResponse.json({ ok: true });
 }
