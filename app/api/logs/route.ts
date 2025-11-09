@@ -1,23 +1,29 @@
-// 👇 prevent build-time prerender/export for this route
-export const runtime = "nodejs";
-export const dynamic = "force-dynamic";
+
+export const runtime = 'nodejs';
+export const dynamic = 'force-dynamic';
 export const revalidate = 0;
 
-import { db, create } from "@/lib/db";
-import { json, bad } from "..//_util";
+import { NextResponse } from 'next/server';
+import { db } from '@/lib/db';
+import { logs } from '@/lib/schema';
+import { desc } from 'drizzle-orm';
+
 export async function GET() {
-  return json(db.data.logs.sort((a, b) => (a.date < b.date ? 1 : -1)));
+  const rows = await db.select().from(logs).orderBy(desc(logs.createdAt));
+  return NextResponse.json(rows);
 }
+
 export async function POST(req: Request) {
-  const body = await req.json().catch(() => null);
-  if (!body?.text) return bad("Missing text");
-  const entry = await create("logs", {
-    date: body.date || new Date().toISOString(),
-    author: body.author || undefined,
-    weather: body.weather || undefined,
-    text: body.text,
-    projectId: body.projectId || undefined,
-    photos: body.photos || undefined,
+  const body = await req.json().catch(()=>null);
+  const id = crypto.randomUUID();
+  await db.insert(logs).values({
+    id,
+    text: String(body?.text||'').trim(),
+    level: body?.level||'INFO',
+    authorId: body?.author||null,
+    projectId: body?.projectId||null,
+    taskId: body?.taskId||null,
+    createdAt: body?.date ? new Date(body.date) : new Date(),
   });
-  return json(entry, 201);
+  return NextResponse.json({ ok: true, id });
 }

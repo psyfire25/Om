@@ -1,33 +1,40 @@
-import { db } from '@/lib/db';
-import { hashPassword, signSession } from '@/lib/auth';
+
+export const runtime = 'nodejs';
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
+
 import { NextResponse } from 'next/server';
+import bcrypt from 'bcryptjs';
+import { db } from '@/lib/db';
+import { invites, users } from '@/lib/schema';
+import { eq } from 'drizzle-orm';
 
 export async function GET(_: Request, { params }: { params: { token: string } }) {
-  const inv = db.data.invites.find(i=>i.token===params.token);
+  const [inv] = await db.select().from(invites).where(eq(invites.token, params.token)).limit(1);
   if (!inv) return NextResponse.json({ error: 'Invite not found' }, { status: 404 });
   if (inv.usedAt) return NextResponse.json({ error: 'Invite already used' }, { status: 400 });
   if (new Date(inv.expiresAt) < new Date()) return NextResponse.json({ error: 'Invite expired' }, { status: 400 });
-  return NextResponse.json({ role: inv.role, email: inv.email });
+  return NextResponse.json({ ok: true, token: inv.token, role: inv.role, email: inv.email });
 }
 
 export async function POST(req: Request, { params }: { params: { token: string } }) {
-  const inv = db.data.invites.find(i=>i.token===params.token);
+  const body = await req.json().catch(()=>null);
+  const name = body?.name?.toString() || '';
+  const email = (body?.email?.toString() || '').toLowerCase();
+  const password = body?.password?.toString() || '';
+
+  const [inv] = await db.select().from(invites).where(eq(invites.token, params.token)).limit(1);
   if (!inv) return new NextResponse('Invite not found', { status: 404 });
   if (inv.usedAt) return new NextResponse('Invite already used', { status: 400 });
   if (new Date(inv.expiresAt) < new Date()) return new NextResponse('Invite expired', { status: 400 });
 
-  const body = await req.json().catch(()=>null);
-  if (!body?.name || !body?.email || !body?.password) return new NextResponse('Missing fields', { status: 400 });
-  if (db.data.users.find(u=>u.email.toLowerCase()===String(body.email).toLowerCase())) return new NextResponse('Email already in use', { status: 400 });
+  const id = crypto.randomUUID();
+  const passwordHash = await bcrypt.hash(password, 10);
+  await db.insert(users).values({
+    id, name, email: email || inv.email || '', role: inv.role, passwordHash, active: true
+  });
 
-  const now = new Date().toISOString();
-  const passwordHash = await hashPassword(body.password);
-  const user = { id: crypto.randomUUID(), name: body.name, email: String(body.email).toLowerCase(), role: inv.role, passwordHash, active: true, createdAt: now, updatedAt: now };
-  db.data.users.push(user as any);
-  inv.usedAt = now; inv.usedBy = user.id; db.write();
+  await db.update(invites).set({ usedAt: new Date(), usedBy: id }).where(eq(invites.token, params.token));
 
-  const token = await signSession(user as any);
-  const res = NextResponse.json({ ok: true });
-  res.cookies.set('session', token, { httpOnly: true, sameSite: 'lax', path: '/' });
-  return res;
+  return NextResponse.json({ ok: true });
 }

@@ -1,3 +1,4 @@
+
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
@@ -16,7 +17,7 @@ function parseDate(d?: string|null) {
 
 export async function GET(req: Request) {
   const url = new URL(req.url);
-  const scope = (url.searchParams.get('scope') || 'mine').toLowerCase(); // mine|all
+  const scope = (url.searchParams.get('scope') || 'mine').toLowerCase();
   const from = parseDate(url.searchParams.get('from'));
   const to = parseDate(url.searchParams.get('to'));
 

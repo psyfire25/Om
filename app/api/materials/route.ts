@@ -1,22 +1,29 @@
-// 👇 prevent build-time prerender/export for this route
-export const runtime = "nodejs";
-export const dynamic = "force-dynamic";
+
+export const runtime = 'nodejs';
+export const dynamic = 'force-dynamic';
 export const revalidate = 0;
 
-import { db, create } from "@/lib/db";
-import { json, bad } from "..//_util";
+import { NextResponse } from 'next/server';
+import { db } from '@/lib/db';
+import { materials } from '@/lib/schema';
+import { desc } from 'drizzle-orm';
+
 export async function GET() {
-  return json(db.data.materials);
+  const rows = await db.select().from(materials).orderBy(desc(materials.createdAt));
+  return NextResponse.json(rows);
 }
+
 export async function POST(req: Request) {
-  const body = await req.json().catch(() => null);
-  if (!body?.name) return bad("Missing name");
-  const material = await create("materials", {
-    name: body.name,
-    quantity: Number(body.quantity ?? 0),
-    unit: body.unit || undefined,
-    location: body.location || undefined,
-    notes: body.notes || undefined,
+  const body = await req.json().catch(()=>null);
+  const id = crypto.randomUUID();
+  await db.insert(materials).values({
+    id,
+    name: String(body?.name||'').trim(),
+    sku: body?.sku||null,
+    quantity: Number(body?.quantity ?? 0),
+    unit: body?.unit||'pcs',
+    location: body?.location||null,
+    notes: body?.notes||null,
   });
-  return json(material, 201);
+  return NextResponse.json({ ok: true, id });
 }

@@ -1,22 +1,34 @@
-// 👇 prevent build-time prerender/export for this route
-export const runtime = "nodejs";
-export const dynamic = "force-dynamic";
+
+export const runtime = 'nodejs';
+export const dynamic = 'force-dynamic';
 export const revalidate = 0;
 
-import { db, create } from "@/lib/db";
-import { json, bad } from "../_util";
+import { NextResponse } from 'next/server';
+import { db } from '@/lib/db';
+import { projects } from '@/lib/schema';
+import { readSession, requireRole } from '@/lib/auth';
+import { desc } from 'drizzle-orm';
+
+function toDate(v:any){ if(!v) return null; const d=new Date(v); return isNaN(d.getTime())?null:d; }
+
 export async function GET() {
-  return json(db.data.projects.sort((a, b) => a.name.localeCompare(b.name)));
+  const me = await readSession();
+  if(!me) return new NextResponse('Unauthorized', { status: 401 });
+  const rows = await db.select().from(projects).orderBy(desc(projects.createdAt));
+  return NextResponse.json(rows);
 }
+
 export async function POST(req: Request) {
-  const body = await req.json().catch(() => null);
-  if (!body?.name) return bad("Missing name");
-  const project = await create("projects", {
-    name: body.name,
-    description: body.description || "",
-    status: body.status || "PLANNING",
-    startDate: body.startDate || undefined,
-    endDate: body.endDate || undefined,
+  await requireRole('ADMIN');
+  const body = await req.json().catch(()=>null);
+  const id = crypto.randomUUID();
+  await db.insert(projects).values({
+    id,
+    name: String(body?.name||'').trim(),
+    description: body?.description||null,
+    status: body?.status||'PLANNING',
+    startDate: toDate(body?.startDate),
+    endDate: toDate(body?.endDate),
   });
-  return json(project, 201);
+  return NextResponse.json({ ok: true, id });
 }
