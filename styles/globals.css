@@ -264,3 +264,6 @@ button.ghost {
   border-radius: 12px;
   padding: 12px;
 }
+
+.clickable { cursor: pointer; }
+.clickable:hover { text-decoration: underline; }
