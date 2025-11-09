@@ -21,10 +21,11 @@ function isOpenApi(pathname: string) {
     pathname === "/api/auth/login" ||
     pathname === "/api/auth/logout" ||
     pathname === "/api/auth/bootstrap"
-  )
-    return true;
+  ) return true;
+
+  // Accept invite (GET + POST on /api/invites/[token]) stays open
   if (pathname.startsWith("/api/invites/")) return true;
-  // add any other public APIs here if needed
+
   return false;
 }
 
@@ -33,7 +34,6 @@ function isProtectedApi(pathname: string) {
 }
 
 function isProtectedPage(pathname: string) {
-  // Any page under these locale-scoped routes requires auth
   const lang = getLang(pathname);
   const protectedPrefixes = [
     `/${lang}/admin`,
@@ -46,6 +46,11 @@ function isProtectedPage(pathname: string) {
 export function middleware(req: NextRequest) {
   const { pathname } = req.nextUrl;
 
+  // 0) Always allow OPTIONS (CORS / preflights) for APIs
+  if (req.method === "OPTIONS" && pathname.startsWith("/api")) {
+    return new NextResponse(null, { status: 204 });
+  }
+
   // 1) Redirect root to /en
   if (pathname === "/" || pathname === "") {
     const url = req.nextUrl.clone();
@@ -57,7 +62,7 @@ export function middleware(req: NextRequest) {
   if (
     pathname.startsWith("/_next") ||
     pathname.startsWith("/favicon") ||
-    pathname.includes(".") // static files
+    pathname.includes(".")
   ) {
     return NextResponse.next();
   }
@@ -82,12 +87,11 @@ export function middleware(req: NextRequest) {
     const lang = getLang(pathname);
     const url = req.nextUrl.clone();
     url.pathname = `/${lang}/login`;
-    // Optional: preserve where they were going
     url.searchParams.set("redirect", pathname);
     return NextResponse.redirect(url);
   }
 
-  // 6) Optional QoL: if already signed in and visiting /[lang]/login, send them to dashboard
+  // 6) QoL: already signed in and hitting /[lang]/login -> send to dashboard
   if (token) {
     const m = pathname.match(/^\/(en|es|ca|fr|it)\/login\/?$/i);
     if (m) {
@@ -103,7 +107,7 @@ export function middleware(req: NextRequest) {
 
 export const config = {
   matcher: [
-    "/", // root redirect
-    "/((?!_next/static|_next/image|favicon.ico).*)", // everything else; we filter inside
+    "/",
+    "/((?!_next/static|_next/image|favicon.ico).*)",
   ],
 };
