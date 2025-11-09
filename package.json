@@ -1,5 +1,5 @@
 {
-  "name": "mas-del-om-internal",
+  "name": "om",
   "version": "0.4.0",
   "private": true,
   "type": "module",
@@ -7,14 +7,19 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "seed": "node scripts/seed.mjs"
+    "seed": "node scripts/seed.mjs",
+    "db:generate": "drizzle-kit generate",
+    "db:push": "drizzle-kit push",
+    "db:studio": "drizzle-kit studio"
   },
   "dependencies": {
     "@fullcalendar/daygrid": "^6.1.19",
     "@fullcalendar/interaction": "^6.1.19",
     "@fullcalendar/react": "^6.1.19",
     "@fullcalendar/timegrid": "^6.1.19",
+    "@neondatabase/serverless": "^1.0.2",
     "bcryptjs": "3.0.3",
+    "drizzle-orm": "^0.44.7",
     "jose": "5.9.6",
     "lowdb": "7.0.1",
     "nanoid": "5.0.7",
@@ -27,6 +32,7 @@
   "devDependencies": {
     "@types/node": "24.10.0",
     "@types/react": "19.2.2",
+    "drizzle-kit": "^0.31.6",
     "typescript": "5.4.5"
   }
 }

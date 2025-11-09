@@ -13,13 +13,8 @@
     "skipLibCheck": true,
     "resolveJsonModule": true,
     "isolatedModules": true,
-    // 🔽 add these two lines
     "baseUrl": ".",
-    "paths": {
-      "@/*": [
-        "./*"
-      ]
-    },
+    "paths": { "@/*": ["./*"] },
     "allowJs": true,
     "noEmit": true,
     "incremental": true,
