@@ -55,6 +55,9 @@ devDependencies:
   '@types/react':
     specifier: 19.2.2
     version: 19.2.2
+  '@types/react-dom':
+    specifier: 18.3.0
+    version: 18.3.0
   drizzle-kit:
     specifier: ^0.31.6
     version: 0.31.6
@@ -681,6 +684,12 @@ packages:
       pg-protocol: 1.10.3
       pg-types: 2.2.0
     dev: false
+
+  /@types/react-dom@18.3.0:
+    resolution: {integrity: sha512-EhwApuTmMBmXuFOikhQLIBUn6uFg81SwLMOAUgodJF14SOBOCMdU04gDoYi0WOJJHD144TL32z4yDqCW3dnkQg==}
+    dependencies:
+      '@types/react': 19.2.2
+    dev: true
 
   /@types/react@19.2.2:
     resolution: {integrity: sha512-6mDvHUFSjyT2B2yeNx2nUgMxh9LtOWvkhIU3uePn2I2oyNymUAX1NIsdgviM4CH+JSrp2D2hsMvJOkxY+0wNRA==}
