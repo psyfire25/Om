@@ -1,20 +1,29 @@
-// 👇 prevent build-time prerender/export for this route
-export const runtime = "nodejs";
-export const dynamic = "force-dynamic";
+// app/api/users/route.ts
+export const runtime = 'nodejs';
+export const dynamic = 'force-dynamic';
 export const revalidate = 0;
 
-import { db } from "@/lib/db";
-import { requireRole } from "@/lib/auth";
-import { NextResponse } from "next/server";
+import { NextResponse } from 'next/server';
+import { db } from '@/lib/db';
+import { users } from '@/lib/schema';
+import { requireRole } from '@/lib/auth';
+import { desc } from 'drizzle-orm';
+
 export async function GET() {
-  await requireRole("SUPER");
-  return NextResponse.json(
-    db.data.users.map((u) => ({
-      id: u.id,
-      name: u.name,
-      email: u.email,
-      role: u.role,
-      active: u.active,
-    }))
-  );
+  // Only SUPER can list all users (keep as in your previous logic)
+  await requireRole('SUPER');
+
+  const rows = await db
+    .select({
+      id: users.id,
+      name: users.name,
+      email: users.email,
+      role: users.role,
+      active: users.active,
+      createdAt: users.createdAt,
+    })
+    .from(users)
+    .orderBy(desc(users.createdAt));
+
+  return NextResponse.json(rows);
 }
