@@ -3,6 +3,7 @@ import Link from "next/link";
 import { locales, defaultLocale, type Locale } from "../../lib/i18n";
 import LangSwitcher from "../../components/LangSwitcher";
 import ClientShell from "../../components/ClientShell"; // 👈 new wrapper
+import LogoutButton from "../../components/LogoutButton";
 
 export async function generateStaticParams() {
   return locales.map((l) => ({ lang: l }));
@@ -28,6 +29,7 @@ export default function LangLayout({
             <Link href={`/${lang}/admin`}>Dashboard</Link>
             <div className="grow" />
             <LangSwitcher lang={lang} />
+            <LogoutButton lang={lang} />
           </nav>
         </header>
 
