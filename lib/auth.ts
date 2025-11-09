@@ -68,8 +68,9 @@ export async function currentUser() {
 }
 
 /** Create a new JWT and set it as the `session` cookie (7d). Returns the token. */
-export async function signSession(payload: { sub: string; email: string; role: Role }) {
-  const token = await new SignJWT(payload)
+export async function signSession(payload: { sub: string; email: string; role: Role | string }) {
+  const role = (payload.role as string) as Role; // narrow at runtime (we only mint known roles)
+  const token = await new SignJWT({ sub: payload.sub, email: payload.email, role })
     .setProtectedHeader({ alg })
     .setIssuedAt()
     .setExpirationTime('7d')
