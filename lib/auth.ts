@@ -1,29 +1,103 @@
-import bcrypt from 'bcryptjs';
-import { SignJWT, jwtVerify } from 'jose';
+// lib/auth.ts
 import { cookies } from 'next/headers';
-import { db, type User, type Role } from './db';
+import { SignJWT, jwtVerify, type JWTPayload } from 'jose';
+import { db } from './db';
+import { users } from './schema';
+import { eq } from 'drizzle-orm';
+
+export type Role = 'STAFF' | 'ADMIN' | 'SUPER';
+
+export type SessionClaims = {
+  sub: string;          // user.id
+  email: string;
+  role: Role;
+  name?: string | null;
+} & JWTPayload;
 
 const alg = 'HS256';
 const secret = new TextEncoder().encode(process.env.JWT_SECRET || 'dev-secret-change-me');
 
-export async function hashPassword(password: string) { const salt = await bcrypt.genSalt(10); return bcrypt.hash(password, salt); }
-export async function verifyPassword(password: string, hash: string) { return bcrypt.compare(password, hash); }
+function roleAtLeast(userRole: Role, required: Role) {
+  const order: Record<Role, number> = { STAFF: 1, ADMIN: 2, SUPER: 3 };
+  return order[userRole] >= order[required];
+}
 
-export type Session = { sub: string; email: string; role: Role; name: string };
-export async function signSession(user: User) {
-  return await new SignJWT({ email: user.email, role: user.role, name: user.name })
-    .setProtectedHeader({ alg }).setSubject(user.id).setIssuedAt().setExpirationTime('7d').sign(secret);
-}
-export async function readSession(): Promise<Session | null> {
+/** Read/verify the JWT from the "session" cookie. Returns claims or null. */
+export async function readSession(): Promise<SessionClaims | null> {
+  const token = cookies().get('session')?.value;
+  if (!token) return null;
   try {
-    const token = cookies().get('session')?.value; if (!token) return null;
-    const { payload } = await jwtVerify(token, secret);
-    return { sub: String(payload.sub), email: String(payload.email), role: payload.role as Role, name: String(payload.name) };
-  } catch { return null; }
+    const { payload } = await jwtVerify(token, secret, { algorithms: [alg] });
+    // minimal shape guard
+    if (!payload || typeof payload.sub !== 'string' || typeof payload.role !== 'string') return null;
+    const claims = payload as SessionClaims;
+    return claims;
+  } catch {
+    return null;
+  }
 }
-export async function requireRole(role: Role | Role[]) {
-  const s = await readSession(); if (!s) throw Object.assign(new Error('Unauthorized'), { status: 401 });
-  const roles = Array.isArray(role) ? role : [role]; if (!roles.includes(s.role)) throw Object.assign(new Error('Forbidden'), { status: 403 });
-  return s;
+
+/** Returns the full user row from DB for the current session, or null. */
+export async function currentUser() {
+  const sess = await readSession();
+  if (!sess) return null;
+  const rows = await db.select().from(users).where(eq(users.id, sess.sub)).limit(1);
+  const u = rows[0];
+  if (!u || !u.active) return null;
+  return u;
 }
-export async function currentUser() { const s = await readSession(); if (!s) return null; return db.data.users.find(u=>u.id===s.sub) || null; }
+
+/** Throws 401 if no session; returns claims when present. */
+export async function requireAuth(): Promise<SessionClaims> {
+  const sess = await readSession();
+  if (!sess) throw new Error('UNAUTHENTICATED');
+  return sess;
+}
+
+/** Throws 401/403 if missing or insufficient role. Returns claims on success. */
+export async function requireRole(required: Role): Promise<SessionClaims> {
+  const sess = await readSession();
+  if (!sess) throw new Error('UNAUTHENTICATED');
+  if (!roleAtLeast(sess.role as Role, required)) throw new Error('FORBIDDEN');
+  return sess;
+}
+
+/** Issues a JWT for a given user row and sets the "session" cookie. */
+export async function issueSessionCookie(u: {
+  id: string;
+  email: string;
+  role: Role;
+  name?: string | null;
+}) {
+  const token = await new SignJWT({
+    sub: u.id,
+    email: u.email,
+    role: u.role,
+    name: u.name ?? null,
+  })
+    .setProtectedHeader({ alg })
+    .setIssuedAt()
+    .setExpirationTime('30d')
+    .sign(secret);
+
+  cookies().set('session', token, {
+    httpOnly: true,
+    sameSite: 'lax',
+    secure: process.env.NODE_ENV === 'production',
+    path: '/',
+    maxAge: 60 * 60 * 24 * 30, // 30 days
+  });
+
+  return token;
+}
+
+/** Clears the session cookie. */
+export function clearSessionCookie() {
+  cookies().set('session', '', {
+    httpOnly: true,
+    sameSite: 'lax',
+    secure: process.env.NODE_ENV === 'production',
+    path: '/',
+    maxAge: 0,
+  });
+}
