@@ -311,5 +311,37 @@ nav .brand svg {
 }
 .icon-btn.active {
   border-color: var(--accent);
-  box-shadow: 0 0 0 2px rgba(96,165,250,0.2) inset;
+  box-shadow: 0 0 0 2px rgba(96,165,250,0.2) /* Hide sidebar & give space for bottom tabs on mobile */
+@media (max-width: 900px) {
+  .sidebar { display: none; }
+  .chrome { grid-template-columns: 1fr; }
+  main { padding-bottom: calc(64px + env(safe-area-inset-bottom, 0px)); }
 }
+
+/* Bottom tabs */
+.mobile-only { display: none; }
+@media (max-width: 900px) { .mobile-only { display: block; } }
+
+.bottom-tabs {
+  position: fixed; left: 0; right: 0; bottom: 0;
+  height: 64px;
+  padding: 6px 10px calc(6px + env(safe-area-inset-bottom, 0px));
+  display: grid; grid-template-columns: repeat(5, 1fr);
+  background: rgba(17,24,39,0.86);
+  backdrop-filter: blur(10px);
+  border-top: 1px solid #1f2937;
+  z-index: 60;
+}
+.bottom-tabs .tab {
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  gap: 2px; font-size: 11px; color: var(--muted); text-decoration: none;
+  border-radius: 10px; transition: background .15s, color .15s, transform .05s;
+}
+.bottom-tabs .tab .ico { font-size: 18px; line-height: 1; }
+.bottom-tabs .tab.active { color: var(--text); background: #0b1220; border: 1px solid #1f2937; }
+
+/* Brand tweaks */
+nav .brand { display:inline-flex; align-items:center; gap:8px; }
+.brand-text { font-weight: 700; letter-spacing:.3px; }
+@media (max-width: 520px) { .brand-text { display: none; } }
+
