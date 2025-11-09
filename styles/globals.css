@@ -275,4 +275,41 @@ button.ghost {
 
 /* Make “ghost” buttons look subtle on dark header */
 button.ghost { opacity: 0.8; }
-button.ghost:hover { opacity: 1; }
+button.ghost:hover { opacity: 1; }/* brand cluster */
+nav .brand {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+nav .brand img,
+nav .brand svg {
+  height: 28px;
+  width: 28px;
+}
+.brand-text {
+  font-weight: 700;
+  letter-spacing: .3px;
+}
+
+/* compact circular icon buttons (flags) */
+.icon-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  height: 32px;
+  width: 32px;
+  border-radius: 50%;
+  border: 1px solid #334155;
+  background: #0b1220;
+  color: var(--text);
+  cursor: pointer;
+  transition: transform .08s ease, background .2s ease, border-color .2s ease;
+}
+.icon-btn:hover {
+  background: #0f1524;
+  border-color: #3b4a66;
+}
+.icon-btn.active {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 2px rgba(96,165,250,0.2) inset;
+}

@@ -1,0 +1,12 @@
+{
+  "name": "Mas de L'Om",
+  "short_name": "Mas de L'Om",
+  "start_url": "/en",
+  "display": "standalone",
+  "background_color": "#0f1524",
+  "theme_color": "#60a5fa",
+  "icons": [
+    { "src": "/icon.svg", "type": "image/svg+xml", "sizes": "any" },
+    { "src": "/apple-touch-icon.png", "sizes": "180x180", "type": "image/png" }
+  ]
+}
