@@ -1,51 +1,63 @@
-// app/api/invites/[token]/route.ts
+// Force dynamic on Vercel
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
 
 import { NextResponse } from 'next/server';
 import { db } from '@/lib/db';
-import { invites } from '@/lib/schema';
+import { invites, users } from '@/lib/schema';
 import { eq } from 'drizzle-orm';
-import { requireRole } from '@/lib/auth';
+import { hash } from 'bcryptjs';
+import { signSession } from '@/lib/auth'; // your JWT set-cookie helper
 
-function normalizeBase(base: string) {
-  return base.replace(/\/+$/, '').replace(/\/(en|es|ca|fr|it)(\/)?$/i, '');
-}
-
+// GET: load invite info for the Accept page
 export async function GET(_: Request, { params }: { params: { token: string } }) {
   const [row] = await db.select().from(invites).where(eq(invites.token, params.token)).limit(1);
   if (!row) return NextResponse.json({ error: 'Invite not found' }, { status: 404 });
+  if (row.usedAt) return NextResponse.json({ error: 'Invite already used' }, { status: 400 });
+  if (row.expiresAt && new Date(row.expiresAt) < new Date())
+    return NextResponse.json({ error: 'Invite expired' }, { status: 400 });
   return NextResponse.json(row);
 }
 
-// Admin edit (email, role, expiry extension, mark used)
-export async function PATCH(req: Request, { params }: { params: { token: string } }) {
-  await requireRole('ADMIN');
-  const patch = await req.json().catch(() => ({} as any));
-
-  const updateData: any = {
-    email: patch.email ?? undefined,
-    role: patch.role ?? undefined,
-    // extendDays: number → recompute expiresAt from NOW
-    expiresAt: typeof patch.extendDays === 'number'
-      ? new Date(Date.now() + Math.max(1, patch.extendDays) * 86400000)
-      : undefined,
-    usedAt: patch.usedAt === null ? null : undefined, // allow clearing usedAt if you want (optional)
-    usedBy: patch.usedBy === null ? null : undefined,
-  };
-  Object.keys(updateData).forEach((k) => updateData[k] === undefined && delete updateData[k]);
-
-  await db.update(invites).set(updateData).where(eq(invites.token, params.token));
+// POST: accept invite -> create user + set password + login
+export async function POST(req: Request, { params }: { params: { token: string } }) {
+  const body = await req.json().catch(() => null);
+  const name = body?.name?.trim();
+  const email = String(body?.email || '').toLowerCase().trim();
+  const password = body?.password;
 
   const [row] = await db.select().from(invites).where(eq(invites.token, params.token)).limit(1);
-  if (!row) return NextResponse.json({ error: 'Invite not found' }, { status: 404 });
-  return NextResponse.json(row);
-}
+  if (!row) return new NextResponse('Invite not found', { status: 404 });
+  if (row.usedAt) return new NextResponse('Invite already used', { status: 400 });
+  if (row.expiresAt && new Date(row.expiresAt) < new Date())
+    return new NextResponse('Invite expired', { status: 400 });
 
-// Revoke
-export async function DELETE(_: Request, { params }: { params: { token: string } }) {
-  await requireRole('ADMIN');
-  await db.delete(invites).where(eq(invites.token, params.token));
-  return NextResponse.json({ ok: true });
+  if (!name || !email || !password) return new NextResponse('Missing fields', { status: 400 });
+
+  const passwordHash = await hash(password, 10);
+
+  // create user
+  const inserted = await db
+    .insert(users)
+    .values({
+      name,
+      email,
+      passwordHash,
+      role: row.role,      // role comes from invite
+      active: true,
+      createdAt: new Date(),
+    })
+    .returning();
+
+  // mark invite used
+  await db
+    .update(invites)
+    .set({ usedAt: new Date(), usedBy: inserted[0].id })
+    .where(eq(invites.token, params.token));
+
+  // sign session cookie
+  await signSession({ sub: inserted[0].id, role: inserted[0].role, email: inserted[0].email });
+
+  return NextResponse.json({ ok: true, userId: inserted[0].id });
 }
