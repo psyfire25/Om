@@ -7,7 +7,7 @@ import { type Locale, t } from '@/lib/i18n';
 import FullCalendar from '@fullcalendar/react';
 import dayGridPlugin from '@fullcalendar/daygrid';
 import timeGridPlugin from '@fullcalendar/timegrid';
-import interactionPlugin, { EventDropArg, EventResizeDoneArg } from '@fullcalendar/interaction';
+import interactionPlugin from '@fullcalendar/interaction';
 import EventDrawer from '@/components/EventDrawer';
 
 const fetcher = (u:string)=>fetch(u).then(r=>r.json());
@@ -36,12 +36,13 @@ export default function CalendarPage({ params }:{ params:{ lang: Locale } }) {
     mutate();
   }
 
-  async function onEventDrop(info: EventDropArg) {
+  async function onEventDrop(info: any) {
     const { id, start, end } = info.event;
     if (!start) return;
     await patchMove(id, start, end);
   }
-  async function onEventResize(info: EventResizeDoneArg) {
+  
+  async function onEventResize(info: any) {
     const { id, start, end } = info.event;
     if (!start) return;
     await patchMove(id, start, end);
