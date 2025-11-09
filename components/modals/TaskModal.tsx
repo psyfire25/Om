@@ -1,6 +1,6 @@
 'use client';
 import { useEffect, useState } from 'react';
-import Modal from '@/components/Modal';
+import Drawer from '@/components/Drawer';
 import useMe from '@/components/useMe';
 import { getJson, patchJson } from '@/lib/clientFetch';
 
@@ -32,7 +32,7 @@ export default function TaskModal({ open, id, onClose, onSaved }: { open:boolean
   }
 
   return (
-    <Modal open={open} onClose={onClose} title={task?.title ? `Task – ${task.title}` : 'Task'}>
+    <Drawer open={open} onClose={onClose} title={task?.title ? `Task – ${task.title}` : 'Task'}>
       {loading && <div className="badge">Loading…</div>}
       {task && (
         <div className="grid" style={{ gap: 10 }}>
@@ -55,6 +55,6 @@ export default function TaskModal({ open, id, onClose, onSaved }: { open:boolean
           </div>
         </div>
       )}
-    </Modal>
+    </Drawer>
   );
 }

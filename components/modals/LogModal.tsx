@@ -1,6 +1,6 @@
 'use client';
 import { useEffect, useState } from 'react';
-import Modal from '@/components/Modal';
+import Drawer from '@/components/Drawer';
 import useMe from '@/components/useMe';
 import { getJson, patchJson } from '@/lib/clientFetch';
 
@@ -46,7 +46,7 @@ export default function LogModal({
   }
 
   return (
-    <Modal open={open} onClose={onClose} title={log ? `Log – ${log.id.slice(0, 6)}…` : 'Log'}>
+    <Drawer open={open} onClose={onClose} title={log ? `Log – ${log.id.slice(0, 6)}…` : 'Log'}>
       {loading && <div className="badge">Loading…</div>}
       {err && <div className="badge" style={{ borderColor: '#f87171', color: '#fca5a5' }}>{err}</div>}
       {log && (
@@ -92,6 +92,6 @@ export default function LogModal({
           </div>
         </div>
       )}
-    </Modal>
+    </Drawer>
   );
 }

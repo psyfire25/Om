@@ -267,3 +267,12 @@ button.ghost {
 
 .clickable { cursor: pointer; }
 .clickable:hover { text-decoration: underline; }
+
+/* Improve drawer scroll smoothness */
+@media (prefers-reduced-motion: reduce) {
+  .no-motion-transition { transition: none !important; }
+}
+
+/* Make “ghost” buttons look subtle on dark header */
+button.ghost { opacity: 0.8; }
+button.ghost:hover { opacity: 1; }

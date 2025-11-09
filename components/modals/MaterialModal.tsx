@@ -1,6 +1,6 @@
 'use client';
 import { useEffect, useState } from 'react';
-import Modal from '@/components/Modal';
+import Drawer from '@/components/Drawer';
 import useMe from '@/components/useMe';
 import { getJson, patchJson } from '@/lib/clientFetch';
 
@@ -28,7 +28,7 @@ export default function MaterialModal({ open, id, onClose, onSaved }: { open:boo
   }
 
   return (
-    <Modal open={open} onClose={onClose} title={m?.name ? `Material – ${m.name}` : 'Material'}>
+    <Drawer open={open} onClose={onClose} title={m?.name ? `Material – ${m.name}` : 'Material'}>
       {!m ? <div className="badge">Loading…</div> : (
         <div className="grid" style={{ gap:10 }}>
           <label>Name{canEdit ? <input value={m.name||''} onChange={e=>setM({...m, name:e.target.value})}/> : <div>{m.name}</div>}</label>
@@ -45,6 +45,6 @@ export default function MaterialModal({ open, id, onClose, onSaved }: { open:boo
           </div>
         </div>
       )}
-    </Modal>
+    </Drawer>
   );
 }

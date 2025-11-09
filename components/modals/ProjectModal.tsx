@@ -1,6 +1,6 @@
 'use client';
 import { useEffect, useState } from 'react';
-import Modal from '@/components/Modal';
+import Drawer from '@/components/Drawer';
 import useMe from '@/components/useMe';
 import { getJson, patchJson } from '@/lib/clientFetch';
 
@@ -38,7 +38,7 @@ export default function ProjectModal({ open, id, onClose, onSaved }: Props) {
   }
 
   return (
-    <Modal open={open} onClose={onClose} title={proj?.name ? `Project – ${proj.name}` : 'Project'}>
+    <Drawer open={open} onClose={onClose} title={proj?.name ? `Project – ${proj.name}` : 'Project'}>
       {loading && <div className="badge">Loading…</div>}
       {err && <div className="badge" style={{ borderColor: '#f87171', color: '#fca5a5' }}>{err}</div>}
       {proj && (
@@ -61,6 +61,6 @@ export default function ProjectModal({ open, id, onClose, onSaved }: Props) {
           </div>
         </div>
       )}
-    </Modal>
+    </Drawer>
   );
 }

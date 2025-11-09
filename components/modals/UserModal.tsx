@@ -1,6 +1,6 @@
 'use client';
 import { useEffect, useState } from 'react';
-import Modal from '@/components/Modal';
+import Drawer from '@/components/Drawer';
 import useMe from '@/components/useMe';
 import { getJson, patchJson } from '@/lib/clientFetch';
 
@@ -21,7 +21,7 @@ export default function UserModal({ open, id, onClose, onSaved }: { open:boolean
   }
 
   return (
-    <Modal open={open} onClose={onClose} title={u?.name ? `User – ${u.name}` : 'User'}>
+    <Drawer open={open} onClose={onClose} title={u?.name ? `User – ${u.name}` : 'User'}>
       {!u ? <div className="badge">Loading…</div> : (
         <div className="grid" style={{ gap:10 }}>
           <div><strong>Email</strong><div>{u.email}</div></div>
@@ -43,6 +43,6 @@ export default function UserModal({ open, id, onClose, onSaved }: { open:boolean
           </div>
         </div>
       )}
-    </Modal>
+    </Drawer>
   );
 }
