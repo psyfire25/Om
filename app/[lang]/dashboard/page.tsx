@@ -2,6 +2,7 @@
 import useSWR from 'swr';
 import Sidebar from '@/components/Sidebar';
 import { t, type Locale } from '@/lib/i18n';
+import Calendar from '@/components/Calendar';
 
 const fetcher = (u:string)=>fetch(u).then(r=>r.json());
 
@@ -27,6 +28,9 @@ export default function Dashboard({ params }:{ params:{ lang: Locale } }){
               <p>Tasks: <b>{tasks.length}</b></p>
               <p>Materials: <b>{materials.length}</b></p>
               <p>Logs: <b>{logs.length}</b></p>
+            </div>
+            <div className="card masonry-item">
+            <Calendar variant="mini" scope="mine" months={3} lang={params.lang} />
             </div>
             <div className="card masonry-item">
               <h3>{t(lang,'dueSoon')}</h3>
