@@ -29,11 +29,15 @@ export default function InviteModal({
       .finally(() => setLoading(false));
   }, [open, token]);
 
+  // 🔗 Build the full invite URL for display/copy
   const inviteUrl = useMemo(() => {
+    if (!token) return '';
     const base =
       (process.env.NEXT_PUBLIC_BASE_URL as string) ||
       (typeof window !== 'undefined' ? window.location.origin : '');
-    return token ? `${base}/${lang}/invite/${token}` : '';
+    // ensure no trailing slash on base
+    const cleanBase = base.replace(/\/+$/, '');
+    return `${cleanBase}/${lang}/invite/${token}`;
   }, [token, lang]);
 
   async function save() {
@@ -41,7 +45,6 @@ export default function InviteModal({
     const body: any = {
       email: row.email ?? null,
       role: row.role ?? 'STAFF',
-      // use extendDays to recompute expiry (optional control)
       ...(row.extendDays ? { extendDays: Number(row.extendDays) } : {}),
     };
     const updated = await patchJson(`/api/invites/${token}`, body);
@@ -81,10 +84,14 @@ export default function InviteModal({
       )}
       {row && (
         <div className="grid" style={{ gap: 10 }}>
-          <div>
-            <strong>Token</strong>
-            <div style={{ wordBreak: 'break-all' }}>{row.token}</div>
-          </div>
+          {/* 🔗 Full link display */}
+          <label>
+            Invite link
+            <div style={{ display: 'flex', gap: 8 }}>
+              <input readOnly value={inviteUrl} style={{ flex: 1 }} />
+              <button type="button" onClick={copy}>Copy</button>
+            </div>
+          </label>
 
           <label>
             Email
@@ -133,7 +140,6 @@ export default function InviteModal({
 
           <div style={{ display: 'flex', gap: 8, justifyContent: 'space-between', marginTop: 8 }}>
             <div style={{ display: 'flex', gap: 8 }}>
-              <button className="ghost" onClick={copy}>Copy link</button>
               {!row.usedAt && <button onClick={revoke}>Revoke</button>}
             </div>
             <div style={{ display: 'flex', gap: 8 }}>
