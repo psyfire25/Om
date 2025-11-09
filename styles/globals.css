@@ -311,7 +311,9 @@ nav .brand svg {
 }
 .icon-btn.active {
   border-color: var(--accent);
-  box-shadow: 0 0 0 2px rgba(96,165,250,0.2) /* Hide sidebar & give space for bottom tabs on mobile */
+  box-shadow: 0 0 0 2px rgba(96,165,250,0.2) 
+}
+  /* Hide sidebar & give space for bottom tabs on mobile */
 @media (max-width: 900px) {
   .sidebar { display: none; }
   .chrome { grid-template-columns: 1fr; }
