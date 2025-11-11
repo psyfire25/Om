@@ -7,7 +7,7 @@ export default function Sidebar({ lang }: { lang: Locale }) {
   const p = usePathname();
   const items = [
     { href: `/${lang}/dashboard`,  icon: '🏠', label: t(lang,'home') },
-    { href: `/${lang}/calendar`,   icon: '📅', label: t(lang,'schedule') },
+    { href: `/${lang}/calendar`,   icon: '📅', label: t(lang,'calendar') },
     { href: `/${lang}/projects`,   icon: '📁', label: t(lang,'projects') },
     { href: `/${lang}/tasks`,      icon: '✅', label: t(lang,'tasks') },
     { href: `/${lang}/materials`,  icon: '🧰', label: t(lang,'materials') },

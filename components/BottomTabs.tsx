@@ -6,7 +6,7 @@ type Props = { lang: string };
 
 const items = (lang: string) => [
   { href: `/${lang}/dashboard`, icon: '🏠', label: 'Home' },
-  { href: `/${lang}/schedule`,  icon: '📅', label: 'Calendar' },
+  { href: `/${lang}/calendar`,  icon: '📅', label: 'Calendar' },
   { href: `/${lang}/admin`,     icon: '📁', label: 'Projects' },
   { href: `/${lang}/admin#tasks`, icon: '✅', label: 'Tasks' },
   { href: `/${lang}/admin/super`, icon: '👑', label: 'Users' }, // show/hide via role later

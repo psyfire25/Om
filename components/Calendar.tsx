@@ -4,17 +4,18 @@ import useSWR from 'swr';
 import FullCalendar from '@fullcalendar/react';
 import dayGridPlugin from '@fullcalendar/daygrid';
 import timeGridPlugin from '@fullcalendar/timegrid';
-import interactionPlugin from '@fullcalendar/interaction'; // no type imports to avoid TS export quirks
+import interactionPlugin from '@fullcalendar/interaction';
+import { Tooltip } from 'react-tooltip';
 
 type Variant = 'mini' | 'full' | 'admin';
 
 const fetcher = (u: string) => fetch(u).then((r) => r.json());
 
 export default function Calendar({
-  scope = 'mine',          // 'mine' | 'all' (admin sees all)
-  variant = 'full',        // 'mini' | 'full' | 'admin'
-  months = 1,              // for dashboard multi-month
-  initialDate,             // optional ISO date string
+  scope = 'mine',
+  variant = 'full',
+  months = 1,
+  initialDate,
   lang = 'en',
 }: {
   scope?: 'mine' | 'all';
@@ -25,9 +26,7 @@ export default function Calendar({
 }) {
   const calendarRef = useRef<any>(null);
 
-  // derive date window for SWR key so we only fetch what we need
   const viewRange = useMemo(() => {
-    // default window: today +/- ~45d if unknown
     const today = initialDate ? new Date(initialDate) : new Date();
     const from = new Date(today); from.setMonth(today.getMonth() - 1);
     const to = new Date(today); to.setMonth(today.getMonth() + (months > 1 ? months : 1));
@@ -47,7 +46,7 @@ export default function Calendar({
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ id, start, end }),
     });
-    mutate(); // refresh
+    mutate();
   }, [mutate]);
 
   const onEventDrop = useCallback(async (info: any) => {
@@ -60,7 +59,6 @@ export default function Calendar({
     await patchMove(id, start, end);
   }, [patchMove]);
 
-  // Variant-specific props
   const fcProps = useMemo(() => {
     if (variant === 'mini') {
       return {
@@ -82,7 +80,6 @@ export default function Calendar({
         navLinks: true,
       };
     }
-    // full (default)
     return {
       headerToolbar: { left: 'prev,next today', center: 'title', right: 'dayGridMonth,timeGridWeek' },
       editable: true,
@@ -91,7 +88,15 @@ export default function Calendar({
     };
   }, [variant]);
 
-  // Multi-month dashboard: render N calendars stacked
+  const renderEventContent = (eventInfo: any) => (
+    <>
+      <div data-tooltip-id="event-tooltip" data-tooltip-content={`${eventInfo.event.title}\n${eventInfo.event.extendedProps.description || ''}`}>
+        <b>{eventInfo.timeText}</b>
+        <i>{eventInfo.event.title}</i>
+      </div>
+    </>
+  );
+
   if (variant === 'mini' && months > 1) {
     const items = Array.from({ length: months }).map((_, i) => {
       const d = new Date(initialDate ?? new Date());
@@ -109,6 +114,7 @@ export default function Calendar({
             droppable={false}
             eventDisplay="block"
             height="auto"
+            eventContent={renderEventContent}
             {...fcProps}
           />
         </div>
@@ -119,6 +125,7 @@ export default function Calendar({
 
   return (
     <div className="card" style={{ overflow: 'hidden' }}>
+      <Tooltip id="event-tooltip" />
       <FullCalendar
         ref={calendarRef}
         plugins={[dayGridPlugin, timeGridPlugin, interactionPlugin]}
@@ -126,11 +133,12 @@ export default function Calendar({
         initialDate={initialDate}
         locale={lang}
         events={events}
-        editable={variant !== 'mini'}         // no dragging in mini
+        editable={variant !== 'mini'}
         droppable={false}
         eventDisplay="block"
         eventDrop={variant !== 'mini' ? onEventDrop : undefined}
         eventResize={variant !== 'mini' ? onEventResize : undefined}
+        eventContent={renderEventContent}
         {...fcProps}
       />
     </div>

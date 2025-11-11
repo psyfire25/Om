@@ -1,63 +1,86 @@
 'use client';
 import useSWR from 'swr';
 import Sidebar from '@/components/Sidebar';
-import Accordion from '@/components/Accordion';
 import { t, type Locale } from '@/lib/i18n';
 import { useState } from 'react';
 import ProjectModal from '@/components/modals/ProjectModal';
+import TaskModal from '@/components/modals/TaskModal';
 
 const fetcher=(u:string)=>fetch(u).then(r=>r.json());
 
 export default function ProjectsPage({ params }:{ params: { lang: Locale } }) {
   const lang = params.lang;
-  const { data: projects = [], mutate: refetch } = useSWR('/api/projects', fetcher);
-  const [projectId, setProjectId] = useState<string|null>(null);
+  const { data: projects = [], mutate: refetchProjects } = useSWR('/api/projects', fetcher);
+  const { data: tasks = [], mutate: refetchTasks } = useSWR('/api/tasks', fetcher);
+  const [selectedProject, setSelectedProject] = useState<any>(null);
+  const [projectModal, setProjectModal] = useState<{ open: boolean, mode: 'create' | 'edit', id?: string }>({ open: false, mode: 'create' });
+  const [taskModal, setTaskModal] = useState<{ open: boolean, mode: 'create' | 'edit', id?: string, projectId?: string }>({ open: false, mode: 'create' });
 
-  async function post(e:React.FormEvent<HTMLFormElement>){
-    e.preventDefault();
-    const fd = new FormData(e.currentTarget);
-    await fetch('/api/projects',{ method:'POST', headers:{'Content-Type':'application/json'},
-      body: JSON.stringify({
-        name: fd.get('name'),
-        description: fd.get('description'),
-        status: fd.get('status'),
-        startDate: fd.get('startDate'),
-        endDate: fd.get('endDate')
-      })
-    });
-    (e.currentTarget as HTMLFormElement).reset();
-    refetch();
-  }
+  const projectTasks = selectedProject ? tasks.filter((t:any) => t.projectId === selectedProject.id) : [];
 
   return (
     <div className="chrome">
       <Sidebar lang={lang}/>
-      <div className="columns">
+      <div className="columns" style={{ padding: 20 }}>
         <div className="column">
-          <Accordion title={t(lang,'projects')} defaultOpen>
-            <form onSubmit={post} className="grid">
-              <input name="name" placeholder="Name" required />
-              <textarea name="description" placeholder="Description" />
-              <label>Status
-                <select name="status" defaultValue="PLANNING"><option>PLANNING</option><option>ACTIVE</option><option>ON_HOLD</option><option>DONE</option></select>
-              </label>
-              <label>Start <input type="date" name="startDate" /></label>
-              <label>End <input type="date" name="endDate" /></label>
-              <button className="primary" type="submit">{t(lang,'createProject')}</button>
-            </form>
-            <table><thead><tr><th>Name</th><th>Status</th><th>Dates</th></tr></thead><tbody>
+          <div className="col-label">{t(lang,'projects')}</div>
+          <div className="card">
+            <ul>
               {projects.map((p:any)=>(
-                <tr key={p.id} className="clickable" onClick={()=>setProjectId(p.id)}>
-                  <td>{p.name}</td>
-                  <td>{p.status}</td>
-                  <td>{p.startDate?new Date(p.startDate).toLocaleDateString():''} {p.endDate?('– '+new Date(p.endDate).toLocaleDateString()):''}</td>
-                </tr>
+                <li key={p.id} className={`clickable ${selectedProject?.id === p.id ? 'active' : ''}`} onClick={()=>setSelectedProject(p)}>
+                  {p.name}
+                </li>
               ))}
-            </tbody></table>
-          </Accordion>
+            </ul>
+            <button onClick={() => setProjectModal({ open: true, mode: 'create' })}>{t(lang,'createProject')}</button>
+          </div>
         </div>
+        {selectedProject && (
+          <>
+            <div className="column">
+              <div className="col-label">Project Details</div>
+              <div className="card">
+                <h2>{selectedProject.name}</h2>
+                <p>{selectedProject.description}</p>
+                <p>Status: {selectedProject.status}</p>
+                <p>Start Date: {selectedProject.startDate ? new Date(selectedProject.startDate).toLocaleDateString() : '–'}</p>
+                <p>End Date: {selectedProject.endDate ? new Date(selectedProject.endDate).toLocaleDateString() : '–'}</p>
+                <button onClick={() => setProjectModal({ open: true, mode: 'edit', id: selectedProject.id })}>Edit Project</button>
+              </div>
+            </div>
+            <div className="column">
+              <div className="col-label">Tasks</div>
+              <div className="card">
+                <ul>
+                  {projectTasks.map((t:any) => (
+                    <li key={t.id} className="clickable" onClick={() => setTaskModal({ open: true, mode: 'edit', id: t.id })}>
+                      {t.title}
+                    </li>
+                  ))}
+                </ul>
+                <button onClick={() => setTaskModal({ open: true, mode: 'create', projectId: selectedProject.id })}>New Task</button>
+              </div>
+            </div>
+          </>
+        )}
       </div>
-      <ProjectModal open={!!projectId} id={projectId} onClose={()=>setProjectId(null)} onSaved={()=>refetch()} />
+      <ProjectModal
+        open={projectModal.open}
+        mode={projectModal.mode}
+        id={projectModal.id}
+        onClose={()=>setProjectModal({ open: false, mode: 'create' })}
+        onSaved={()=>{refetchProjects(); if(selectedProject) setSelectedProject(projects.find(p => p.id === selectedProject.id))}}
+        onCreated={() => {refetchProjects()}}
+      />
+      <TaskModal
+        open={taskModal.open}
+        mode={taskModal.mode}
+        id={taskModal.id}
+        projectId={taskModal.projectId}
+        onClose={()=>setTaskModal({ open: false, mode: 'create' })}
+        onSaved={()=>refetchTasks()}
+        onCreated={()=>refetchTasks()}
+      />
     </div>
   );
 }

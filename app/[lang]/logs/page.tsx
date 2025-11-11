@@ -1,7 +1,6 @@
 'use client';
 import useSWR from 'swr';
 import Sidebar from '@/components/Sidebar';
-import Accordion from '@/components/Accordion';
 import { t, type Locale } from '@/lib/i18n';
 import { useState } from 'react';
 import LogModal from '@/components/modals/LogModal';
@@ -12,58 +11,47 @@ export default function LogsPage({ params }:{ params:{ lang: Locale }}) {
   const lang = params.lang;
   const { data: projects = [] } = useSWR('/api/projects', fetcher);
   const { data: logs = [], mutate: refetch } = useSWR('/api/logs', fetcher);
-  const [logId, setLogId] = useState<string|null>(null);
-
-  async function post(e:React.FormEvent<HTMLFormElement>){
-    e.preventDefault();
-    const fd = new FormData(e.currentTarget);
-    await fetch('/api/logs',{ method:'POST', headers:{'Content-Type':'application/json'},
-      body: JSON.stringify({
-        date: fd.get('date')||undefined,
-        author: fd.get('author'),
-        weather: fd.get('weather'),
-        text: fd.get('text'),
-        projectId: fd.get('projectId')||undefined
-      })
-    });
-    (e.currentTarget as HTMLFormElement).reset(); refetch();
-  }
+  const [selectedLog, setSelectedLog] = useState<any>(null);
+  const [logModal, setLogModal] = useState<{ open: boolean, mode: 'create' | 'edit', id?: string }>({ open: false, mode: 'create' });
 
   return (
     <div className="chrome">
       <Sidebar lang={lang}/>
-      <div className="columns">
+      <div className="columns" style={{ padding: 20 }}>
         <div className="column">
-          <Accordion title={t(lang,'logsJournal')} defaultOpen>
-            <form onSubmit={post} className="grid">
-              <label>Date <input type="date" name="date" /></label>
-              <input name="author" placeholder="Author" />
-              <input name="weather" placeholder="Weather" />
-              <label>Project
-                <select name="projectId" defaultValue="">
-                  <option value="">General</option>
-                  {projects.map((p:any)=>(<option key={p.id} value={p.id}>{p.name}</option>))}
-                </select>
-              </label>
-              <textarea name="text" placeholder="What happened?" required />
-              <button className="primary" type="submit">Add</button>
-            </form>
-            <table><thead><tr><th>Date</th><th>Author</th><th>Project</th><th>Entry</th></tr></thead><tbody>
-              {logs.map((l:any)=> {
-                const proj = l.projectId ? projects.find((p:any)=>p.id===l.projectId)?.name : '—';
-                const d = l.createdAt || l.date;
-                const ds = d ? new Date(d).toLocaleDateString() : '—';
-                return (
-                  <tr key={l.id} className="clickable" onClick={()=>setLogId(l.id)}>
-                    <td>{ds}</td><td>{l.author||'—'}</td><td>{proj||'—'}</td><td>{l.text}</td>
-                  </tr>
-                );
-              })}
-            </tbody></table>
-          </Accordion>
+          <div className="col-label">{t(lang,'logsJournal')}</div>
+          <div className="card">
+            <ul>
+              {logs.map((l:any)=>(
+                <li key={l.id} className={`clickable ${selectedLog?.id === l.id ? 'active' : ''}`} onClick={()=>setSelectedLog(l)}>
+                  {new Date(l.createdAt).toLocaleDateString()} – {l.text.slice(0, 50)}...
+                </li>
+              ))}
+            </ul>
+            <button onClick={() => setLogModal({ open: true, mode: 'create' })}>Add Log</button>
+          </div>
         </div>
+        {selectedLog && (
+          <div className="column">
+            <div className="col-label">Log Details</div>
+            <div className="card">
+              <p><b>Date:</b> {new Date(selectedLog.createdAt).toLocaleString()}</p>
+              <p><b>Author:</b> {selectedLog.author || '–'}</p>
+              <p><b>Project:</b> {projects.find((p:any) => p.id === selectedLog.projectId)?.name || '–'}</p>
+              <p><b>Weather:</b> {selectedLog.weather || '–'}</p>
+              <p>{selectedLog.text}</p>
+            </div>
+          </div>
+        )}
       </div>
-      <LogModal open={!!logId} id={logId} onClose={()=>setLogId(null)} onSaved={()=>refetch()} />
+      <LogModal
+        open={logModal.open}
+        mode={logModal.mode}
+        id={logModal.id}
+        onClose={()=>setLogModal({ open: false, mode: 'create' })}
+        onSaved={()=>refetch()}
+        onCreated={()=>refetch()}
+      />
     </div>
   );
 }
