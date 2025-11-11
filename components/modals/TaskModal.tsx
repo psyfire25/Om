@@ -2,21 +2,38 @@
 import { useEffect, useState } from 'react';
 import Drawer from '@/components/Drawer';
 import useMe from '@/components/useMe';
-import { getJson, patchJson } from '@/lib/clientFetch';
+import { getJson, patchJson, postJson, deleteJson } from '@/lib/clientFetch';
 
-export default function TaskModal({ open, id, onClose, onSaved }: { open:boolean; id:string|null; onClose:()=>void; onSaved?:()=>void; }) {
+type Props = {
+  open: boolean;
+  mode: 'create' | 'edit';
+  id?: string | null;
+  projectId?: string | null;
+  onClose: () => void;
+  onSaved?: () => void;
+  onCreated?: (newProject: any) => void;
+};
+
+export default function TaskModal({ open, mode, id, projectId, onClose, onSaved, onCreated }: Props) {
   const { me } = useMe();
   const canEdit = me?.role === 'SUPER';
   const [task, setTask] = useState<any>(null);
   const [loading, setLoading] = useState(false);
+  const [showDelete, setShowDelete] = useState(false);
 
-  useEffect(()=>{ if(!open||!id) return;
+  useEffect(() => {
+    if (!open) return;
     setLoading(true);
-    getJson(`/api/tasks/${id}`).then(setTask).finally(()=>setLoading(false));
-  },[open,id]);
+    setShowDelete(false);
+    if (mode === 'edit' && id) {
+      getJson(`/api/tasks/${id}`).then(setTask).finally(() => setLoading(false));
+    } else {
+      setTask({ title: '', description: '', status: 'PENDING', projectId: projectId, assigneeId: null, startDate: null, endDate: null, dueDate: null });
+      setLoading(false);
+    }
+  }, [open, mode, id, projectId]);
 
-  async function save(){
-    if(!id) return;
+  async function save() {
     const body = {
       title: task.title,
       description: task.description,
@@ -27,12 +44,26 @@ export default function TaskModal({ open, id, onClose, onSaved }: { open:boolean
       endDate: task.endDate || null,
       dueDate: task.dueDate || null,
     };
-    const updated = await patchJson(`/api/tasks/${id}`, body);
-    setTask(updated); onSaved?.();
+    if (mode === 'edit' && id) {
+      const updated = await patchJson(`/api/tasks/${id}`, body);
+      setTask(updated);
+      onSaved?.();
+    } else {
+      const newTask = await postJson('/api/tasks', body);
+      onCreated?.(newTask);
+      onClose();
+    }
+  }
+
+  async function del() {
+    if (mode !== 'edit' || !id) return;
+    await deleteJson(`/api/tasks/${id}`);
+    onSaved?.();
+    onClose();
   }
 
   return (
-    <Drawer open={open} onClose={onClose} title={task?.title ? `Task – ${task.title}` : 'Task'}>
+    <Drawer open={open} onClose={onClose} title={mode === 'edit' && task?.title ? `Task – ${task.title}` : 'New Task'}>
       {loading && <div className="badge">Loading…</div>}
       {task && (
         <div className="grid" style={{ gap: 10 }}>
@@ -49,7 +80,19 @@ export default function TaskModal({ open, id, onClose, onSaved }: { open:boolean
           </div>
           <label>Due{canEdit ? <input type="date" value={task.dueDate?.slice(0,10)||''} onChange={e=>setTask({...task, dueDate:e.target.value||null})}/> : <div>{task.dueDate?.slice(0,10)||'—'}</div>}</label>
 
+          {mode === 'edit' && canEdit && showDelete && (
+            <div className="card" style={{ background: '#374151', marginTop: 12 }}>
+              <p>Are you sure you want to delete this task?</p>
+              <div style={{ display:'flex', gap:8, justifyContent:'flex-end', marginTop:8 }}>
+                <button className="ghost" onClick={()=>setShowDelete(false)}>Cancel</button>
+                <button className="danger" onClick={del}>Delete Task</button>
+              </div>
+            </div>
+          )}
+
           <div style={{ display:'flex', gap:8, justifyContent:'flex-end', marginTop:8 }}>
+            {mode === 'edit' && canEdit && !showDelete && <button className="danger" onClick={()=>setShowDelete(true)}>Delete</button>}
+            <div className="grow" />
             <button className="ghost" onClick={onClose}>Close</button>
             {canEdit && <button className="primary" onClick={save}>Save</button>}
           </div>

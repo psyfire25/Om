@@ -2,19 +2,34 @@
 import { useEffect, useState } from 'react';
 import Drawer from '@/components/Drawer';
 import useMe from '@/components/useMe';
-import { getJson, patchJson } from '@/lib/clientFetch';
+import { getJson, patchJson, postJson, deleteJson } from '@/lib/clientFetch';
 
-export default function MaterialModal({ open, id, onClose, onSaved }: { open:boolean; id:string|null; onClose:()=>void; onSaved?:()=>void; }) {
+type Props = {
+  open: boolean;
+  mode: 'create' | 'edit';
+  id?: string | null;
+  onClose: () => void;
+  onSaved?: () => void;
+  onCreated?: (newMaterial: any) => void;
+};
+
+export default function MaterialModal({ open, mode, id, onClose, onSaved, onCreated }: Props) {
   const { me } = useMe();
   const canEdit = me?.role === 'SUPER';
   const [m, setM] = useState<any>(null);
+  const [showDelete, setShowDelete] = useState(false);
 
-  useEffect(()=>{ if(!open||!id) return;
-    getJson(`/api/materials/${id}`).then(setM).catch(()=>{}); 
-  },[open,id]);
+  useEffect(() => {
+    if (!open) return;
+    setShowDelete(false);
+    if (mode === 'edit' && id) {
+      getJson(`/api/materials/${id}`).then(setM).catch(() => {});
+    } else {
+      setM({ name: '', sku: '', quantity: 0, unit: 'pcs', location: '', notes: '' });
+    }
+  }, [open, mode, id]);
 
-  async function save(){
-    if(!id) return;
+  async function save() {
     const body = {
       name: m.name,
       sku: m.sku || null,
@@ -23,12 +38,26 @@ export default function MaterialModal({ open, id, onClose, onSaved }: { open:boo
       location: m.location || null,
       notes: m.notes || null,
     };
-    const updated = await patchJson(`/api/materials/${id}`, body);
-    setM(updated); onSaved?.();
+    if (mode === 'edit' && id) {
+      const updated = await patchJson(`/api/materials/${id}`, body);
+      setM(updated);
+      onSaved?.();
+    } else {
+      const newMaterial = await postJson('/api/materials', body);
+      onCreated?.(newMaterial);
+      onClose();
+    }
+  }
+
+  async function del() {
+    if (mode !== 'edit' || !id) return;
+    await deleteJson(`/api/materials/${id}`);
+    onSaved?.();
+    onClose();
   }
 
   return (
-    <Drawer open={open} onClose={onClose} title={m?.name ? `Material – ${m.name}` : 'Material'}>
+    <Drawer open={open} onClose={onClose} title={mode === 'edit' && m?.name ? `Material – ${m.name}` : 'New Material'}>
       {!m ? <div className="badge">Loading…</div> : (
         <div className="grid" style={{ gap:10 }}>
           <label>Name{canEdit ? <input value={m.name||''} onChange={e=>setM({...m, name:e.target.value})}/> : <div>{m.name}</div>}</label>
@@ -39,7 +68,20 @@ export default function MaterialModal({ open, id, onClose, onSaved }: { open:boo
           </div>
           <label>Location{canEdit ? <input value={m.location||''} onChange={e=>setM({...m, location:e.target.value})}/> : <div>{m.location||'—'}</div>}</label>
           <label>Notes{canEdit ? <textarea value={m.notes||''} onChange={e=>setM({...m, notes:e.target.value})}/> : <div>{m.notes||'—'}</div>}</label>
+          
+          {mode === 'edit' && canEdit && showDelete && (
+            <div className="card" style={{ background: '#374151', marginTop: 12 }}>
+              <p>Are you sure you want to delete this material?</p>
+              <div style={{ display:'flex', gap:8, justifyContent:'flex-end', marginTop:8 }}>
+                <button className="ghost" onClick={()=>setShowDelete(false)}>Cancel</button>
+                <button className="danger" onClick={del}>Delete Material</button>
+              </div>
+            </div>
+          )}
+
           <div style={{ display:'flex', gap:8, justifyContent:'flex-end', marginTop:8 }}>
+            {mode === 'edit' && canEdit && !showDelete && <button className="danger" onClick={()=>setShowDelete(true)}>Delete</button>}
+            <div className="grow" />
             <button className="ghost" onClick={onClose}>Close</button>
             {canEdit && <button className="primary" onClick={save}>Save</button>}
           </div>
