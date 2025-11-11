@@ -9,19 +9,20 @@ import TaskModal from '@/components/modals/TaskModal';
 import MaterialModal from '@/components/modals/MaterialModal';
 import LogModal from '@/components/modals/LogModal';
 import { postJson } from '@/lib/clientFetch';
+import { Project, Task } from '@/lib/schema';
 
 const fetcher = (u:string)=>fetch(u).then(r=>r.json());
 
 export default function Dashboard({ params }:{ params:{ lang: Locale } }) {
   const lang = params.lang;
 
-  const { data: projects = [], mutate: refetchProjects } = useSWR('/api/projects', fetcher);
-  const { data: tasks = [], mutate: refetchTasks } = useSWR('/api/tasks', fetcher);
+  const { data: projects = [], mutate: refetchProjects } = useSWR<Project[]>('/api/projects', fetcher);
+  const { data: tasks = [], mutate: refetchTasks } = useSWR<Task[]>('/api/tasks', fetcher);
   const { data: materials = [], mutate: refetchMaterials } = useSWR('/api/materials', fetcher);
   const { data: logs = [], mutate: refetchLogs } = useSWR('/api/logs', fetcher);
 
-  const dueSoon = (tasks||[]).filter((x:any)=>x.dueDate && new Date(x.dueDate) <= new Date(Date.now()+7*86400000)).sort((a,b) => new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime());
-  const activeProjects = projects.filter((p:any) => p.status !== 'DONE').sort((a,b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+  const dueSoon = (tasks||[]).filter((x:Task)=>x.dueDate && new Date(x.dueDate) <= new Date(Date.now()+7*86400000)).sort((a:Task,b:Task) => new Date(a.dueDate!).getTime() - new Date(b.dueDate!).getTime());
+  const activeProjects = projects.filter((p:Project) => p.status !== 'DONE').sort((a:Project,b:Project) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
 
   const [projectModal, setProjectModal] = useState<{ open: boolean, mode: 'create' | 'edit', id?: string }>({ open: false, mode: 'create' });
   const [taskModal, setTaskModal] = useState<{ open: boolean, mode: 'create' | 'edit', id?: string, projectId?: string }>({ open: false, mode: 'create' });
@@ -60,51 +61,53 @@ export default function Dashboard({ params }:{ params:{ lang: Locale } }) {
   return (
     <div className="chrome">
       <Sidebar lang={lang} />
-      <div style={{ padding: 20 }}>
-        <Calendar variant="full" scope="mine" lang={lang} />
-      </div>
-      <div className="columns" style={{ padding: '0 20px 20px 20px' }}>
-        <div className="column">
-          <div className="col-label">{t(lang,'projectsCol')}</div>
-          <div className="card">
-            <ul>
-              {activeProjects.map((p:any)=>(
-                <li key={p.id} className="clickable" onClick={()=>setProjectModal({ open: true, mode: 'edit', id: p.id })}>
-                  {p.name} <span className="badge">{p.status}</span>
-                </li>
-              ))}
-            </ul>
-          </div>
+      <div className="main-content">
+        <div style={{ padding: 20 }}>
+          <Calendar variant="full" scope="mine" lang={lang} />
         </div>
-
-        <div className="column">
-          <div className="col-label">{t(lang,'dueSoon')}</div>
-          <div className="card">
-            <ul>
-              {dueSoon.map((tq:any)=>(
-                <li key={tq.id} className="clickable" onClick={()=>setTaskModal({ open: true, mode: 'edit', id: tq.id })}>
-                  <span className="badge">{tq.status}</span> {tq.title} — {tq.dueDate?new Date(tq.dueDate).toLocaleDateString():'—'}
-                </li>
-              ))}
-              {dueSoon.length===0 && <li>Nothing due in 7 days.</li>}
-            </ul>
-          </div>
-        </div>
-
-        <div className="column">
-          <div className="col-label">{t(lang,'logsCol')}</div>
-          <div className="card">
-            <textarea placeholder="Quick log entry..." value={logText} onChange={e => setLogText(e.target.value)} style={{ width: '100%', minHeight: 80 }} />
-            <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 8 }}>
-              <button onClick={quickLog}>Save Log</button>
+        <div className="columns" style={{ padding: '0 20px 20px 20px' }}>
+          <div className="column">
+            <div className="col-label">{t(lang,'projectsCol')}</div>
+            <div className="card">
+              <ul>
+                {activeProjects.map((p:Project)=>(
+                  <li key={p.id} className="clickable" onClick={()=>setProjectModal({ open: true, mode: 'edit', id: p.id })}>
+                    {p.name} <span className="badge">{p.status}</span>
+                  </li>
+                ))}
+              </ul>
             </div>
           </div>
-          <div className="card" style={{ marginTop: 20 }}>
-            <h3>New...</h3>
-            <button onClick={() => setProjectModal({ open: true, mode: 'create' })}>Project</button>
-            <button onClick={() => setTaskModal({ open: true, mode: 'create' })}>Task</button>
-            <button onClick={() => setMaterialModal({ open: true, mode: 'create' })}>Material</button>
-            <button onClick={() => setLogModal({ open: true, mode: 'create' })}>Log Entry</button>
+
+          <div className="column">
+            <div className="col-label">{t(lang,'dueSoon')}</div>
+            <div className="card">
+              <ul>
+                {dueSoon.map((tq:Task)=>(
+                  <li key={tq.id} className="clickable" onClick={()=>setTaskModal({ open: true, mode: 'edit', id: tq.id })}>
+                    <span className="badge">{tq.status}</span> {tq.title} — {tq.dueDate?new Date(tq.dueDate).toLocaleDateString():'—'}
+                  </li>
+                ))}
+                {dueSoon.length===0 && <li>Nothing due in 7 days.</li>}
+              </ul>
+            </div>
+          </div>
+
+          <div className="column">
+            <div className="col-label">{t(lang,'logsCol')}</div>
+            <div className="card">
+              <textarea placeholder="Quick log entry..." value={logText} onChange={e => setLogText(e.target.value)} style={{ width: '100%', minHeight: 80 }} />
+              <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 8 }}>
+                <button onClick={quickLog}>Save Log</button>
+              </div>
+            </div>
+            <div className="card" style={{ marginTop: 20 }}>
+              <h3>New...</h3>
+              <button onClick={() => setProjectModal({ open: true, mode: 'create' })}>Project</button>
+              <button onClick={() => setTaskModal({ open: true, mode: 'create' })}>Task</button>
+              <button onClick={() => setMaterialModal({ open: true, mode: 'create' })}>Material</button>
+              <button onClick={() => setLogModal({ open: true, mode: 'create' })}>Log Entry</button>
+            </div>
           </div>
         </div>
       </div>

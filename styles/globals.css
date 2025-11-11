@@ -71,13 +71,20 @@ button {
   display: grid;
   grid-template-columns: 260px 1fr;
   gap: 12px;
-  min-height: calc(100vh - 62px);
+  height: calc(100vh - 62px);
 }
 .sidebar {
   background: var(--panel);
   border: 1px solid #1f2937;
   border-radius: 12px;
   padding: 10px;
+  position: sticky;
+  top: 78px;
+  height: calc(100vh - 94px);
+}
+.main-content {
+  overflow-y: auto;
+  height: calc(100vh - 78px);
 }
 .tree {
   list-style: none;
