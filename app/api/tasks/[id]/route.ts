@@ -27,6 +27,7 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
     startDate: toDate(body?.startDate),
     endDate: toDate(body?.endDate),
     dueDate: toDate(body?.dueDate),
+    time: body?.time,
     updatedAt: new Date(),
   };
   Object.keys(patch).forEach(k => patch[k]===undefined && delete patch[k]);

@@ -53,7 +53,7 @@ export default function TasksPage({ params }:{ params:{ lang: Locale }}) {
                   <h2>{selectedTask.title}</h2>
                   <p>{selectedTask.description}</p>
                   <p>Status: {selectedTask.status}</p>
-                  <p>Due Date: {selectedTask.dueDate ? new Date(selectedTask.dueDate).toLocaleDateString() : '–'}</p>
+                  <p>Due Date: {selectedTask.dueDate ? new Date(selectedTask.dueDate).toLocaleDateString() : '–'} {selectedTask.time || ''}</p>
                 </div>
               </div>
               {taskProject && (

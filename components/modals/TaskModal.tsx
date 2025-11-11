@@ -28,7 +28,7 @@ export default function TaskModal({ open, mode, id, projectId, onClose, onSaved,
     if (mode === 'edit' && id) {
       getJson(`/api/tasks/${id}`).then(setTask).finally(() => setLoading(false));
     } else {
-      setTask({ title: '', description: '', status: 'PENDING', projectId: projectId, assigneeId: null, startDate: null, endDate: null, dueDate: null });
+      setTask({ title: '', description: '', status: 'PENDING', projectId: projectId, assigneeId: null, startDate: null, endDate: null, dueDate: null, time: null });
       setLoading(false);
     }
   }, [open, mode, id, projectId]);
@@ -43,6 +43,7 @@ export default function TaskModal({ open, mode, id, projectId, onClose, onSaved,
       startDate: task.startDate || null,
       endDate: task.endDate || null,
       dueDate: task.dueDate || null,
+      time: task.time || null,
     };
     if (mode === 'edit' && id) {
       const updated = await patchJson(`/api/tasks/${id}`, body);
@@ -78,7 +79,10 @@ export default function TaskModal({ open, mode, id, projectId, onClose, onSaved,
             <label>Start{canEdit ? <input type="date" value={task.startDate?.slice(0,10)||''} onChange={e=>setTask({...task, startDate:e.target.value||null})}/> : <div>{task.startDate?.slice(0,10)||'—'}</div>}</label>
             <label>End{canEdit ? <input type="date" value={task.endDate?.slice(0,10)||''} onChange={e=>setTask({...task, endDate:e.target.value||null})}/> : <div>{task.endDate?.slice(0,10)||'—'}</div>}</label>
           </div>
-          <label>Due{canEdit ? <input type="date" value={task.dueDate?.slice(0,10)||''} onChange={e=>setTask({...task, dueDate:e.target.value||null})}/> : <div>{task.dueDate?.slice(0,10)||'—'}</div>}</label>
+          <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:8 }}>
+            <label>Due Date{canEdit ? <input type="date" value={task.dueDate?.slice(0,10)||''} onChange={e=>setTask({...task, dueDate:e.target.value||null})}/> : <div>{task.dueDate?.slice(0,10)||'—'}</div>}</label>
+            <label>Time{canEdit ? <input type="time" value={task.time||''} onChange={e=>setTask({...task, time:e.target.value||null})}/> : <div>{task.time||'—'}</div>}</label>
+          </div>
 
           {mode === 'edit' && canEdit && showDelete && (
             <div className="card" style={{ background: '#374151', marginTop: 12 }}>

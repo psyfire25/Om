@@ -69,6 +69,7 @@ export const tasks = pgTable('tasks', {
   assigneeId: uuid('assignee_id').references(() => users.id, { onDelete: 'set null' }),
   projectId: uuid('project_id').references(() => projects.id, { onDelete: 'set null' }),
   dueDate: date('due_date', { mode: 'date' }),
+  time: varchar('time', { length: 5 }), // HH:mm
   createdAt: timestamp('created_at', { mode: 'date' }).notNull().defaultNow(),
   updatedAt: timestamp('updated_at', { mode: 'date' }).notNull().defaultNow(),
 });

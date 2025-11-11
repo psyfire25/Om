@@ -33,6 +33,7 @@ export async function POST(req: Request) {
     startDate: toDate(body?.startDate),
     endDate: toDate(body?.endDate),
     dueDate: toDate(body?.dueDate),
+    time: body?.time || null,
   });
   return NextResponse.json({ ok: true, id });
 }
