@@ -24,6 +24,7 @@ export async function POST(req: Request) {
     unit: body?.unit||'pcs',
     location: body?.location||null,
     notes: body?.notes||null,
+    projectId: body?.projectId||null,
   });
   return NextResponse.json({ ok: true, id });
 }

@@ -1,19 +1,21 @@
 'use client';
-import useSWR from 'swr';
 import Sidebar from '@/components/Sidebar';
 import Accordion from '@/components/Accordion';
 import { t, type Locale } from '@/lib/i18n';
-
-const fetcher = (url:string)=>fetch(url).then(r=>r.json());
+import { useApi } from '@/lib/hooks'; // Import the new hook
+import { Project, Task, Material, Log } from '@/lib/schema'; // Import types
 
 export default function Admin({ params }:{ params: { lang: Locale } }){
   const lang = params.lang;
-  const { data: projects = [], mutate: refetchProjects } = useSWR('/api/projects', fetcher);
-  const { data: tasks = [], mutate: refetchTasks } = useSWR('/api/tasks', fetcher);
-  const { data: materials = [], mutate: refetchMaterials } = useSWR('/api/materials', fetcher);
-  const { data: logs = [], mutate: refetchLogs } = useSWR('/api/logs', fetcher);
+  const { data: projects = [], isLoading: projectsLoading, isError: projectsError, mutate: refetchProjects } = useApi<Project[]>('/api/projects');
+  const { data: tasks = [], isLoading: tasksLoading, isError: tasksError, mutate: refetchTasks } = useApi<Task[]>('/api/tasks');
+  const { data: materials = [], isLoading: materialsLoading, isError: materialsError, mutate: refetchMaterials } = useApi<Material[]>('/api/materials');
+  const { data: logs = [], isLoading: logsLoading, isError: logsError, mutate: refetchLogs } = useApi<Log[]>('/api/logs');
 
   async function post(path:string, obj:any){ await fetch(path,{ method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(obj) }); }
+
+  if (projectsLoading || tasksLoading || materialsLoading || logsLoading) return <div>Loading...</div>;
+  if (projectsError || tasksError || materialsError || logsError) return <div>Error loading data.</div>;
 
   return (
     <div className="chrome">

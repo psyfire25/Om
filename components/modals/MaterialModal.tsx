@@ -3,17 +3,19 @@ import { useEffect, useState } from 'react';
 import Drawer from '@/components/Drawer';
 import useMe from '@/components/useMe';
 import { getJson, patchJson, postJson, deleteJson } from '@/lib/clientFetch';
+import { Project } from '@/lib/schema';
 
 type Props = {
   open: boolean;
   mode: 'create' | 'edit';
   id?: string | null;
+  projects: Project[]; // Add projects prop
   onClose: () => void;
   onSaved?: () => void;
   onCreated?: (newMaterial: any) => void;
 };
 
-export default function MaterialModal({ open, mode, id, onClose, onSaved, onCreated }: Props) {
+export default function MaterialModal({ open, mode, id, projects, onClose, onSaved, onCreated }: Props) {
   const { me } = useMe();
   const canEdit = me?.role === 'SUPER';
   const [m, setM] = useState<any>(null);
@@ -25,7 +27,7 @@ export default function MaterialModal({ open, mode, id, onClose, onSaved, onCrea
     if (mode === 'edit' && id) {
       getJson(`/api/materials/${id}`).then(setM).catch(() => {});
     } else {
-      setM({ name: '', sku: '', quantity: 0, unit: 'pcs', location: '', notes: '' });
+      setM({ name: '', sku: '', quantity: 0, unit: 'pcs', location: '', notes: '', projectId: null });
     }
   }, [open, mode, id]);
 
@@ -37,6 +39,7 @@ export default function MaterialModal({ open, mode, id, onClose, onSaved, onCrea
       unit: m.unit || 'pcs',
       location: m.location || null,
       notes: m.notes || null,
+      projectId: m.projectId || null,
     };
     if (mode === 'edit' && id) {
       const updated = await patchJson(`/api/materials/${id}`, body);
@@ -68,6 +71,12 @@ export default function MaterialModal({ open, mode, id, onClose, onSaved, onCrea
           </div>
           <label>Location{canEdit ? <input value={m.location||''} onChange={e=>setM({...m, location:e.target.value})}/> : <div>{m.location||'—'}</div>}</label>
           <label>Notes{canEdit ? <textarea value={m.notes||''} onChange={e=>setM({...m, notes:e.target.value})}/> : <div>{m.notes||'—'}</div>}</label>
+          <label>Project{canEdit ? (
+            <select value={m.projectId||''} onChange={e=>setM({...m, projectId:e.target.value||null})}>
+              <option value="">— No Project —</option>
+              {projects.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
+            </select>
+          ) : <div>{projects.find(p => p.id === m.projectId)?.name || '—'}</div>}</label>
           
           {mode === 'edit' && canEdit && showDelete && (
             <div className="card" style={{ background: '#374151', marginTop: 12 }}>

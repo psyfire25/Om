@@ -24,6 +24,7 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
     unit: patch.unit,
     location: patch.location,
     notes: patch.notes,
+    projectId: patch.projectId,
     updatedAt: new Date(),
   };
   Object.keys(updateData).forEach((k) => updateData[k] === undefined && delete updateData[k]);
