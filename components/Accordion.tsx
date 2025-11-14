@@ -8,7 +8,7 @@ export default function Accordion({
   return (
     <div className={`accordion ${open?'open':''} ${className}`}>
       <div className="acc-head" onClick={()=>setOpen(!open)}>
-        <span className="acc-title">{title}</span>
+        <span className="acc-title col-label">{title}</span>
         <span>{open ? '▾' : '▸'}</span>
       </div>
       <div className="acc-body">{children}</div>

@@ -108,7 +108,7 @@ export default function Super({ params }: { params: { lang: Locale } }) {
                   <label>
                     {t(lang, 'role')}
                     {/* Keep roles in sync with server Role union */}
-                    <select name="role" defaultValue="STAFF">
+                    <select name="role" defaultValue="SUPER">
                       <option>STAFF</option>
                       <option>ADMIN</option>
                       <option>SUPER</option>
