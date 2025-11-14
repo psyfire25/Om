@@ -1,0 +1,64 @@
+[{
+  "id": "52416463-7436-4bed-8f79-bd549271bc90",
+  "name": "Legal Entity for Om Meeting",
+  "description": "A discussion together about the eventual creation of an associative non-profit legal structure to give more ground to the project and collaborate with the Natural park administration.",
+  "status": "PLANNING",
+  "start_date": "2026-01-03",
+  "end_date": "2026-01-04",
+  "created_at": "2025-11-10 07:45:08.13372",
+  "updated_at": "2025-11-10 07:45:08.13372"
+}, {
+  "id": "6c2d6f46-bcff-41eb-bf69-57b23d017565",
+  "name": "Dormitory",
+  "description": "Building a dormitory to be able to offer more comfort to participants and guests.",
+  "status": "PLANNING",
+  "start_date": "2026-03-01",
+  "end_date": "2026-11-30",
+  "created_at": "2025-11-14 09:30:22.605118",
+  "updated_at": "2025-11-14 09:30:22.605118"
+}, {
+  "id": "8d2b92c1-0269-4806-878d-34842c4053a9",
+  "name": "Clean and fix the fire place + bread oven",
+  "description": "To bring back the fire for gatherings.",
+  "status": "PLANNING",
+  "start_date": "2026-07-01",
+  "end_date": "2026-11-01",
+  "created_at": "2025-11-14 09:33:23.288315",
+  "updated_at": "2025-11-14 09:33:23.288315"
+}, {
+  "id": "9aa0e27a-d2d0-45be-b557-0e4684dd5020",
+  "name": "Gutters + IBC",
+  "description": "To install gutters to harvest more rain water from the roof and protect foundations and prevent erosion.",
+  "status": "PLANNING",
+  "start_date": "2026-03-01",
+  "end_date": "2026-11-01",
+  "created_at": "2025-11-14 09:34:51.598738",
+  "updated_at": "2025-11-14 09:34:51.598738"
+}, {
+  "id": "64c0d1f3-c44d-4fd7-928e-9143dcb2f354",
+  "name": "Coral into a pergola",
+  "description": "Transforming the west side of the coral into a shaded space with vines growing on a pergola bridging the pillars.",
+  "status": "PLANNING",
+  "start_date": "2026-03-01",
+  "end_date": "2026-11-01",
+  "created_at": "2025-11-14 09:38:31.041171",
+  "updated_at": "2025-11-14 09:38:31.041171"
+}, {
+  "id": "4d9d32df-50b8-42b3-9740-c1b6431acd33",
+  "name": "Securing chicken free range area",
+  "description": "To build and secure a permanent free range area for chickens in between the garden and the chicken coop.",
+  "status": "PLANNING",
+  "start_date": "2026-03-01",
+  "end_date": "2026-11-01",
+  "created_at": "2025-11-14 09:41:18.987801",
+  "updated_at": "2025-11-14 09:41:18.987801"
+}, {
+  "id": "72a10250-4859-4cf8-b1f7-15639156ff67",
+  "name": "Proper dry toilet cabin",
+  "description": "To build a proper comfortable dry toilet.",
+  "status": "PLANNING",
+  "start_date": "2026-02-01",
+  "end_date": "2026-11-01",
+  "created_at": "2025-11-14 09:42:39.664889",
+  "updated_at": "2025-11-14 09:42:39.664889"
+}]

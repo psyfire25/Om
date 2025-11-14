@@ -92,7 +92,7 @@ export default function LogModal({ open, mode, id, onClose, onSaved, onCreated }
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
             <div>
               <strong>Author</strong>
-              <div>{log.authorId || '—'}</div>
+              <div>{me?.name || '—'}</div>
             </div>
             <div>
               <strong>Project</strong>

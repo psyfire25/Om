@@ -28,16 +28,29 @@ export function hasRole(userRole: Role, required: Role) {
 /* ---------------------------- session handlers -------------------------- */
 
 /** Verify the `session` cookie and return its payload, or null if missing/invalid. */
-export async function readSession(): Promise<SessionPayload | null> {
-  const token = cookies().get('session')?.value;
-  if (!token) return null;
+export async function readSession() {
   try {
-    const { payload } = await jwtVerify(token, secret, { algorithms: [alg] });
-    // Basic shape guard
-    if (!payload || typeof payload.sub !== 'string' || typeof payload.role !== 'string') return null;
-    return payload as SessionPayload;
-  } catch {
-    return null;
+    const cookie = cookies().get('session')?.value;
+    if (!cookie) return null;
+
+    const secret = process.env.JWT_SECRET;
+    if (!secret) {
+      console.error('readSession: JWT_SECRET missing');
+      return null;
+    }
+
+    const payload = await jwtVerify(
+      cookie,
+      new TextEncoder().encode(secret),
+    );
+
+    return {
+      sub: payload.payload.sub as string,
+      // plus whatever else you store
+    };
+  } catch (err) {
+    console.error('readSession error', err);
+    return null; // <- crucial: don’t throw, just “no session”
   }
 }
 

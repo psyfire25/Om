@@ -10,7 +10,9 @@
     "seed": "node scripts/seed.mjs",
     "db:generate": "drizzle-kit generate",
     "db:push": "drizzle-kit push",
-    "db:studio": "drizzle-kit studio"
+    "db:studio": "drizzle-kit studio",
+    "restore-data": "tsx scripts/restore-data.ts",
+    "admin-make": "node scripts/admin-make.js"
   },
   "dependencies": {
     "@fullcalendar/daygrid": "^6.1.19",

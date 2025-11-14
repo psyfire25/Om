@@ -36,7 +36,7 @@ export default function Calendar({
   }, [initialDate, months]);
 
   const { data: events = [], mutate } = useSWR(
-    `/api/events?scope=${scope}&from=${viewRange.from}&to=${viewRange.to}`,
+    `/api/events`,
     fetcher,
   );
 

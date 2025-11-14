@@ -1,4 +1,4 @@
-
+// app/api/events/route.ts
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
@@ -6,100 +6,107 @@ export const revalidate = 0;
 import { NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import { projects, tasks } from '@/lib/schema';
-import { readSession, requireRole } from '@/lib/auth';
-import { and, desc, gte, lte, eq, isNotNull } from 'drizzle-orm';
+import { readSession } from '@/lib/auth';
 
-function parseDate(d?: string|null) {
-  if (!d) return null;
-  const t = Date.parse(d);
-  return Number.isFinite(t) ? new Date(t) : null;
+type CalendarEvent = {
+  id: string;
+  kind: 'project' | 'task';
+  refId: string;
+  title: string;
+  start: string;
+  end: string | null;
+  allDay: boolean;
+  source: 'project' | 'task';
+  extendedProps?: Record<string, any>;
+};
+
+function toIso(v: any | null | undefined): string | null {
+  if (!v) return null;
+  const d = new Date(v);
+  if (Number.isNaN(d.getTime())) return null;
+  return d.toISOString();
 }
 
-export async function GET(req: Request) {
-  const url = new URL(req.url);
-  const scope = (url.searchParams.get('scope') || 'mine').toLowerCase();
-  const from = parseDate(url.searchParams.get('from'));
-  const to = parseDate(url.searchParams.get('to'));
+export async function GET(_req: Request) {
+  // Golden rule: NEVER 500 from here. Worst case: return [].
+  try {
+    // Auth: if session fails or no user, we just return no events
+    try {
+      const me = await readSession();
+      if (!me) {
+        return NextResponse.json<CalendarEvent[]>([]);
+      }
+    } catch (e) {
+      console.error('readSession failed in /api/events', e);
+      return NextResponse.json<CalendarEvent[]>([]);
+    }
 
-  const me = await readSession();
-  if (!me) return new NextResponse('Unauthorized', { status: 401 });
+    let events: CalendarEvent[] = [];
 
-  const taskDateCond = and(
-    from ? gte(tasks.startDate, from) : undefined,
-    to ? lte(tasks.endDate, to) : undefined,
-  );
-  const projDateCond = and(
-    from ? gte(projects.startDate, from) : undefined,
-    to ? lte(projects.endDate, to) : undefined,
-  );
+    try {
+      const [projectRows, taskRows] = await Promise.all([
+        db.select().from(projects),
+        db.select().from(tasks),
+      ]);
 
-  const isAdmin = (me.role === 'ADMIN' || me.role === 'SUPER');
+      // Projects → events
+      for (const p of projectRows as any[]) {
+        const startIso =
+          toIso(p.startDate) ?? toIso(p.createdAt) ?? null;
+        if (!startIso) continue;
 
-  let taskRows;
-  if (scope === 'all' && isAdmin) {
-    taskRows = await db.select().from(tasks).where(taskDateCond).orderBy(desc(tasks.createdAt));
-  } else {
-    taskRows = await db.select().from(tasks).where(and(eq(tasks.assigneeId, me.sub), taskDateCond)).orderBy(desc(tasks.createdAt));
+        const endIso = toIso(p.endDate);
+
+        events.push({
+          id: `project:${p.id}`,
+          kind: 'project',
+          refId: p.id,
+          title: p.name ?? 'Project',
+          start: startIso,
+          end: endIso,
+          allDay: true,
+          source: 'project',
+          extendedProps: {
+            kind: 'project',
+            status: p.status,
+          },
+        });
+      }
+
+      // Tasks → events
+      for (const t of taskRows as any[]) {
+        const startIso =
+          toIso(t.startDate) ?? toIso(t.dueDate) ?? toIso(t.createdAt) ?? null;
+        if (!startIso) continue;
+
+        const endIso =
+          toIso(t.endDate) ?? toIso(t.dueDate) ?? null;
+
+        events.push({
+          id: `task:${t.id}`,
+          kind: 'task',
+          refId: t.id,
+          title: t.title ?? 'Task',
+          start: startIso,
+          end: endIso,
+          allDay: !t.time,
+          source: 'task',
+          extendedProps: {
+            kind: 'task',
+            status: t.status,
+            projectId: t.projectId ?? null,
+            assigneeId: t.assigneeId ?? null,
+          },
+        });
+      }
+    } catch (e) {
+      console.error('DB error in /api/events, returning []', e);
+      events = [];
+    }
+
+    return NextResponse.json(events);
+  } catch (err) {
+    console.error('Unexpected /api/events error, returning []', err);
+    return NextResponse.json<CalendarEvent[]>([]);
   }
-
-  let projectRows: any[] = [];
-  if (scope === 'all' && isAdmin) {
-    projectRows = await db.select().from(projects).where(and(isNotNull(projects.startDate), projDateCond)).orderBy(desc(projects.createdAt));
-  }
-
-  const taskEvents = taskRows
-    .filter((x: any) => x.startDate || x.dueDate)
-    .map((x: any) => ({
-      id: `task:${x.id}`,
-      title: x.title,
-      start: (x.startDate ?? x.dueDate) as any,
-      end: (x.endDate ?? x.dueDate ?? x.startDate) as any,
-      allDay: true,
-      backgroundColor: x.status === 'DONE' ? '#22c55e' : x.status === 'BLOCKED' ? '#f59e0b' : undefined,
-      borderColor: 'transparent',
-      extendedProps: { kind: 'task', status: x.status, projectId: x.projectId ?? null, assigneeId: x.assigneeId ?? null },
-    }));
-
-  const projectEvents = projectRows.map((x: any) => ({
-    id: `project:${x.id}`,
-    title: `🗂 ${x.name}`,
-    start: (x.startDate ?? x.endDate) as any,
-    end: (x.endDate ?? x.startDate) as any,
-    allDay: true,
-    backgroundColor: '#60a5fa',
-    borderColor: 'transparent',
-    extendedProps: { kind: 'project', status: x.status },
-  }));
-
-  return NextResponse.json([...taskEvents, ...projectEvents]);
-}
-
-export async function PATCH(req: Request) {
-  const body = await req.json().catch(() => null);
-  if (!body?.id) return new NextResponse('Missing id', { status: 400 });
-  const me = await readSession();
-  if (!me) return new NextResponse('Unauthorized', { status: 401 });
-
-  const [kind, realId] = String(body.id).split(':');
-  const start = body.start ? new Date(body.start) : null;
-  const end = body.end ? new Date(body.end) : start;
-
-  if (kind === 'task') {
-    const [row] = await db.select().from(tasks).where(eq(tasks.id, realId)).limit(1);
-    if (!row) return new NextResponse('Not Found', { status: 404 });
-    const isOwner = row.assigneeId === me.sub;
-    const isAdmin = (me.role === 'ADMIN' || me.role === 'SUPER');
-    if (!isOwner && !isAdmin) return new NextResponse('Forbidden', { status: 403 });
-
-    await db.update(tasks).set({ startDate: start, endDate: end, updatedAt: new Date() }).where(eq(tasks.id, realId));
-    return NextResponse.json({ ok: true });
-  }
-
-  if (kind === 'project') {
-    await requireRole('ADMIN');
-    await db.update(projects).set({ startDate: start, endDate: end, updatedAt: new Date() }).where(eq(projects.id, realId));
-    return NextResponse.json({ ok: true });
-  }
-
-  return new NextResponse('Bad id', { status: 400 });
 }

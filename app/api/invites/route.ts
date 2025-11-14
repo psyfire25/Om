@@ -4,64 +4,90 @@ export const dynamic = 'force-dynamic';
 export const revalidate = 0;
 
 import { NextResponse } from 'next/server';
+import crypto from 'node:crypto';
 import { db } from '@/lib/db';
-import { invites, users } from '@/lib/schema';
-import { requireRole, readSession } from '@/lib/auth';
-import { eq, desc } from 'drizzle-orm';
-import { defaultLocale } from '@/lib/i18n';
+import { invites } from '@/lib/schema';
+import { readSession } from '@/lib/auth';
 
-function normalizeBase(base: string) {
-  return base.replace(/\/+$/, '').replace(/\/(en|es|ca|fr|it)(\/)?$/i, '');
+function normaliseRole(raw: any): string {
+  const r = String(raw || '').toUpperCase();
+  if (r === 'SUPER' || r === 'SUPERADMIN') return 'SUPERADMIN';
+  if (r === 'ADMIN') return 'ADMIN';
+  return 'STAFF';
 }
 
-// ✅ LIST invites (ADMIN/SUPER)
+// GET /api/invites → simple list
 export async function GET() {
-  await requireRole('ADMIN');
-  const rows = await db
-    .select({
-      token: invites.token,
-      email: invites.email,
-      role: invites.role,
-      createdBy: invites.createdBy,
-      createdAt: invites.createdAt,
-      expiresAt: invites.expiresAt,
-      usedAt: invites.usedAt,
-      usedBy: invites.usedBy,
-    })
-    .from(invites)
-    .orderBy(desc(invites.createdAt));
+  try {
+    const me = await readSession();
+    if (!me) {
+      return new NextResponse('Unauthorized', { status: 401 });
+    }
 
-  // (Optional) resolve creator name
-  // const creators = await db.select({ id: users.id, name: users.name }).from(users);
-  // map if you want names
-
-  return NextResponse.json(rows);
+    const rows = await db.select().from(invites);
+    return NextResponse.json(rows);
+  } catch (err: any) {
+    console.error('GET /api/invites error', err);
+    return NextResponse.json(
+      { error: String(err?.message || err) },
+      { status: 500 },
+    );
+  }
 }
 
-// ✅ CREATE invite
+// POST /api/invites → MUST set token explicitly
 export async function POST(req: Request) {
-  await requireRole('ADMIN');
-  const me = await readSession();
-  const body = await req.json().catch(() => null);
-  const role = body?.role || 'STAFF';
-  const email = body?.email || null;
-  const days = Number(body?.expiresDays || 7);
-  const lang = (body?.lang || defaultLocale) as string;
+  try {
+    const me = await readSession();
+    if (!me) {
+      return new NextResponse('Unauthorized', { status: 401 });
+    }
 
-  const token = crypto.randomUUID();
-  const now = new Date();
-  await db.insert(invites).values({
-    token,
-    role,
-    email,
-    createdBy: me!.sub,
-    createdAt: now,
-    expiresAt: new Date(now.getTime() + days * 86400000),
-  });
+    const body = await req.json().catch(() => ({} as any));
 
-  const origin = new URL(req.url).origin;
-  const baseEnv = process.env.BASE_URL || origin;
-  const base = normalizeBase(baseEnv);
+    const rawEmail = body?.email;
+    const email =
+      typeof rawEmail === 'string' && rawEmail.trim().length > 0
+        ? rawEmail.trim().toLowerCase()
+        : null; // optional
 
-  return NextResponse.json({ token, url: `${base}/${lang}/invite/${token}` });
+    const role = normaliseRole(body?.role);
+    const expiresDays = Number(body?.expiresDays || 7);
+    const lang = String(body?.lang || 'en');
+
+    // 🔑 Generate a non-null token
+    const token = crypto.randomBytes(16).toString('hex');
+
+    const now = new Date();
+    const expiresAt = new Date(
+      now.getTime() + Math.max(1, expiresDays) * 86400000,
+    );
+
+    const baseUrl = process.env.BASE_URL || 'http://localhost:3000';
+    const url = `${baseUrl}/${lang}/join/${token}`;
+
+    // INSERT: explicitly set token so NOT NULL constraint is satisfied
+    await db.insert(invites).values({
+      token,
+      role,
+      email,
+      createdBy: me.sub ?? null,
+      // createdAt / expiresAt / usedAt / usedBy will use DB defaults
+      // If your Drizzle schema exposes expiresAt etc., you can also set them here
+      expiresAt,
+    } as any);
+
+    return NextResponse.json({
+      ok: true,
+      token,
+      url,
+      expiresAt: expiresAt.toISOString(),
+    });
+  } catch (err: any) {
+    console.error('POST /api/invites error', err);
+    return NextResponse.json(
+      { error: String(err?.message || err) },
+      { status: 500 },
+    );
+  }
 }
