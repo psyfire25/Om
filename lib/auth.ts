@@ -6,7 +6,10 @@ import { users } from '@/lib/schema';
 import { eq } from 'drizzle-orm';
 
 /* ------------------------- roles & payload types ------------------------- */
-
+type SessionUser = {
+  sub: string;
+  role: 'SUPERADMIN' | 'SUPER' | 'ADMIN' | 'STAFF';
+};
 export type Role = 'STAFF' | 'ADMIN' | 'SUPER';
 
 type SessionPayload = JWTPayload & {
@@ -21,14 +24,16 @@ const secret = new TextEncoder().encode(process.env.JWT_SECRET || 'dev-secret-ch
 
 /* ------------------------------- utilities ------------------------------ */
 
-export function hasRole(userRole: Role, required: Role) {
-  return ROLE_ORDER.indexOf(userRole) >= ROLE_ORDER.indexOf(required);
+function hasRole(userRole: SessionUser['role'], required: SessionUser['role'][]) {
+  if (!required || required.length === 0) return true;
+  return required.includes(userRole);
 }
 
 /* ---------------------------- session handlers -------------------------- */
 
 /** Verify the `session` cookie and return its payload, or null if missing/invalid. */
-export async function readSession() {
+
+export async function readSession(): Promise<SessionUser | null> {
   try {
     const cookie = cookies().get('session')?.value;
     if (!cookie) return null;
@@ -39,36 +44,49 @@ export async function readSession() {
       return null;
     }
 
-    const payload = await jwtVerify(
+    const { payload } = await jwtVerify(
       cookie,
       new TextEncoder().encode(secret),
     );
 
+    const userId = payload.sub as string | undefined;
+    if (!userId) return null;
+
+    const [user] = await db
+      .select({
+        id: users.id,
+        role: users.role,
+      })
+      .from(users)
+      .where(eq(users.id, userId))
+      .limit(1);
+
+    if (!user) return null;
+
     return {
-      sub: payload.payload.sub as string,
-      // plus whatever else you store
+      sub: user.id,
+      role: user.role as SessionUser['role'],
     };
   } catch (err) {
     console.error('readSession error', err);
-    return null; // <- crucial: don’t throw, just “no session”
+    return null;
   }
 }
 
-/** Throw 401/403 when not authenticated / lacking role. Returns the payload on success. */
-export async function requireRole(required: Role): Promise<SessionPayload> {
+export async function requireRole(required: SessionUser['role'][]) {
   const sess = await readSession();
   if (!sess) {
-    // No session → 401
     const e: any = new Error('Unauthorized');
     e.status = 401;
     throw e;
   }
+
   if (!hasRole(sess.role, required)) {
-    // Not enough privilege → 403
     const e: any = new Error('Forbidden');
     e.status = 403;
     throw e;
   }
+
   return sess;
 }
 
